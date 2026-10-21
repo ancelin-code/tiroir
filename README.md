@@ -21,8 +21,9 @@ injection and sync.
   it. Isolation between drawers is a tested guarantee.
 - **Abstain rather than mislead.** Injecting nothing beats injecting a
   plausible but wrong memory.
-- **Local and private.** No telemetry, no third-party APIs. Embeddings run on
-  your machine. The only network traffic goes to your own Git remote.
+- **You choose where your memory lives.** It syncs to a Git repository you
+  pick, self-hosted or hosted. Nothing else leaves your machine: no telemetry,
+  no third-party APIs, and embeddings are computed locally.
 - **Git without Git.** tiroir syncs your memory across machines and team
   members through Git, and you never have to touch Git.
 - **Humans own the synthesis.** Logs are append-only, and summaries change only
@@ -38,7 +39,7 @@ injection and sync.
 
 ## Project documents
 
-- [Product brief](brief.md): vision, principles and constraints.
+- [Product brief](docs/brief.md): vision, principles and constraints.
 - [Requirements](delivery/prd.md): what v1 must do, checkably.
 - [Prior art review](docs/research/prior-art.md): what we learned from existing
   agent memory projects.

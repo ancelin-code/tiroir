@@ -341,6 +341,6 @@ None at this stage.
 
 ## Sources
 
-- `brief.md` — product brief.
+- `docs/brief.md` — product brief.
 - `docs/research/prior-art.md` — review of agentcairn, Cairn, agent-memory-kit,
   Basic Memory, claude-mem, agentmemory and the Agent Memory Repo format.

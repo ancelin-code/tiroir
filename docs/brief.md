@@ -2,7 +2,7 @@
 
 > **tiroir** (French for *drawer*): configurable, scoped memory for AI agents.
 >
-> This brief describes **what** we are building and **why**, the principles and the hard constraints. It deliberately leaves most **how** decisions open. The requirements live in [`delivery/prd.md`](delivery/prd.md); every significant design decision is recorded as a decision record (context → options → decision → consequences).
+> This brief describes **what** we are building and **why**, the principles and the hard constraints. It deliberately leaves most **how** decisions open. The requirements live in [`delivery/prd.md`](../delivery/prd.md); every significant design decision is recorded as a decision record (context → options → decision → consequences).
 
 ## 1. Vision
 
@@ -21,7 +21,7 @@ A developer thinks in repos and services. An accountant thinks in client files. 
 
 ## 3. Prior art and positioning
 
-The agent-memory space is crowded. The review of the projects below is in [`docs/research/prior-art.md`](docs/research/prior-art.md):
+The agent-memory space is crowded. The review of the projects below is in [`docs/research/prior-art.md`](research/prior-art.md):
 
 - **agentcairn**: local-first; a Markdown (Obsidian) vault as source of truth; a rebuildable index; installers for many hosts.
 - **Cairn (KalebKE)**: SQLite with FTS5 and sqlite-vec, hybrid retrieval, ambient injection via hooks. It **abstains** when nothing clears a score threshold — adopted.
@@ -72,7 +72,7 @@ The metaphor is kept as the product vocabulary.
 
 ## 7. Functional requirements
 
-The detailed, checkable requirements are in [`delivery/prd.md`](delivery/prd.md). In short:
+The detailed, checkable requirements are in [`delivery/prd.md`](../delivery/prd.md). In short:
 
 **Must have (v1)**
 
