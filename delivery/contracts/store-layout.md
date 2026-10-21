@@ -17,14 +17,14 @@ these shapes; every reader accepts them.
 
 ```text
 <store>/
-  tiroir.toml                 schema (contract schema.md)
+  tiroir.yaml                 schema (contract schema.md)
   MEMORY.md                   derived entry document, regenerated, never merged
   templates/                  templates referenced by the schema
   shared/                     shared space: *.md, sub-folders allowed
   <drawer path>/              one per drawer, from the type's `path` pattern
     summary.md
     log/<yyyy>/<entry file>.md
-  .tiroir/purges.toml         purge records (created by the first purge)
+  .tiroir/purges.yaml         purge records (created by the first purge)
 ```
 
 No other top-level entries are written by tiroir. Files tiroir does not know
@@ -99,16 +99,18 @@ drawer, `- [[<drawer id>/summary]] — <label>: <names>`, grouped by type and
 sorted by drawer id. Written in the store language. After a replay or merge it
 is regenerated from the resulting tree, never merged.
 
-### `.tiroir/purges.toml`
+### `.tiroir/purges.yaml`
 
-```toml
-[[purges]]
-epoch = 1
-date = 2026-10-21T15:00:00Z
-author = "alice"
-path_digests = ["9f2c…"]   # sha256(store.id + "/" + path), hex
-blobs = ["3b18e512dba79e4c8300dd08aeb37f8e728b8dad"]
+```yaml
+purges:
+  - epoch: 1
+    date: 2026-10-21T15:00:00Z
+    author: alice
+    path_digests: ["9f2c…"]
+    blobs: ["3b18e512dba79e4c8300dd08aeb37f8e728b8dad"]
 ```
+
+`path_digests` are `sha256(store.id + "/" + path)`, in hex.
 
 Append-only; entries are never edited or removed.
 

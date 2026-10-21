@@ -1,4 +1,4 @@
-# ADR-003: Store a drawer as a summary file plus one file per log entry, configured by `tiroir.toml`
+# ADR-003: Store a drawer as a summary file plus one file per log entry, configured by `tiroir.yaml`
 
 **Status:** proposed
 **Date:** 2026-10-21
@@ -9,20 +9,24 @@ Every component reads and writes the same files: the schema, summaries, log
 entries and shared documents. Their shape decides whether concurrent writes
 conflict (Y4a), whether summaries can be merged section by section (Y4b),
 whether the store is usable without tiroir (S5, H3) and whether migrations can
-rewrite the schema without losing the user's comments (I4). The exact shapes
+rewrite the schema safely (I4). The exact shapes
 are in the contracts `schema.md` and `store-layout.md`; this record fixes the
 choices behind them.
 
 ## Decision
 
-- **Schema file:** `tiroir.toml` at the store root, TOML 1.0. It holds the
-  store's identity (id, name, audience, language) and the drawer types. Read
-  and rewritten with `toml_edit`, so migrations keep the user's comments,
-  order and formatting.
-- **Frontmatter:** YAML, the format Obsidian and other Markdown tools read.
-  tiroir parses it with a YAML 1.2 parser and writes it itself in one
-  canonical form (fixed key order, explicit quoting), so its output is stable
-  across machines and versions.
+- **One syntax, YAML 1.2,** for every structured file: the schema, the
+  frontmatter, the machine configuration (ADR-004) and the purge records
+  (ADR-011). Frontmatter has to be YAML, the format Obsidian and other
+  Markdown tools read, so using it everywhere leaves users one syntax to learn.
+  tiroir parses with a YAML 1.2 parser (`saphyr`), refuses anchors, aliases,
+  tags and multi-document files, and writes every file itself in one canonical
+  form (fixed key order, explicit quoting), so its output is stable across
+  machines and versions.
+- **Schema file:** `tiroir.yaml` at the store root. It holds the store's
+  identity (id, name, audience, language) and the drawer types. A migration
+  rewrites it in canonical form; comments are not preserved, so explanations
+  go in the schema's `description` fields, which are data.
 - **Drawer:** a folder whose path comes from the drawer type's layout pattern
   (for example `clients/{code}`, slugified), holding:
   - `summary.md`: YAML frontmatter for the metadata fields, then a body whose
@@ -55,11 +59,13 @@ choices behind them.
 - **Metadata in a separate YAML file** - cleaner for tools, but splits one
   record across two files a non-developer must keep in sync; frontmatter is
   what Obsidian and every other Markdown tool already understand.
-- **YAML for the schema** - one syntax with the frontmatter and lighter for
-  nested structures, but the Rust ecosystem has no maintained YAML editor that
-  preserves comments, so every migration would erase the user's notes in the
-  file; YAML's indentation rules also produce silent errors for
-  non-developers editing it, which TOML's explicit tables avoid.
+- **TOML for the schema and configuration files** - `toml_edit` rewrites a
+  file keeping its comments and layout, which the Rust ecosystem offers for
+  no YAML library. Rejected: the schema is written by the init skill, presets
+  and migrations, not by hand, so no use for those comments was found; the
+  `description` fields carry the explanations instead. Two syntaxes in one
+  store cost every reader more than the lost comments. YAML's indentation
+  errors are caught because unknown keys and wrong types are errors.
 - **JSON Schema for metadata** - expressive, but far beyond the field types S2
   requires and unreadable for the init skill's audience.
 
@@ -70,6 +76,6 @@ handle this, and year folders keep directories short. Reading a whole log
 means reading many files, which only the indexer and the "read log" operation
 do. Editing a log by hand means editing one entry file, which Y10 then
 rejects. Section headings become structural: renaming a section is a migration.
-Users who open the files meet two syntaxes, TOML for the schema and YAML for
-frontmatter; the init skill and migrations mean a non-developer edits neither
-by hand.
+Users who open the files meet one syntax, YAML. Comments added by hand to
+`tiroir.yaml` disappear at the next migration; the dry run (I4) shows the
+rewritten schema among the modified files, so this is never silent.

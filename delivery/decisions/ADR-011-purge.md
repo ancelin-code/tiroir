@@ -25,7 +25,7 @@ every clone must learn that the rewrite happened.
   `tiroir: purged`. libgit2 has no `filter-branch`, so this is tiroir code,
   covered by the same multi-clone tests as sync.
 - **Purge record:** the rewritten head gets one more commit adding an entry to
-  `.tiroir/purges.toml`: the next epoch number, the date, the author, a SHA-256
+  `.tiroir/purges.yaml`: the next epoch number, the date, the author, a SHA-256
   digest of each purged path salted with the store id, and the Git blob ids of
   the purged files. Paths and content never appear in the record.
 - **Publication:** force-push, only if the remote head is still the one the
@@ -37,12 +37,12 @@ every clone must learn that the rewrite happened.
   test asserts that the purged blobs no longer exist in the local object
   store.
 - **Other clones:** when a fetch finds a remote head that does not descend from
-  the last known one and a higher epoch in `purges.toml`, tiroir resets to the
+  the last known one and a higher epoch in `purges.yaml`, tiroir resets to the
   remote, deletes the unreachable objects, and replays the queued local
   operations (ADR-010) except those based on a pre-purge commit that touch a
   purged path, which are refused and reported (Y4e).
 - **Push guard:** tiroir refuses to push any commit containing a blob listed
-  in `purges.toml` (E2). A new drawer created after the purge under the same
+  in `purges.yaml` (E2). A new drawer created after the purge under the same
   path is allowed: it is new content, and refusing it would block a returning
   client forever.
 

@@ -31,8 +31,8 @@ light, efficient"). A Python build was first considered and measured
 - **Main dependencies:** `rmcp` (MCP, with elicitation), `fastembed` on `ort`
   (embeddings, ADR-006), `rusqlite` (index, ADR-005), `rust-stemmers`
   (Snowball stemming, ADR-007), `aho-corasick` (detection, ADR-008), `git2`
-  and `keyring` (Git and credentials, ADR-010), `toml_edit` (schema
-  round-trip, ADR-003), `saphyr` (frontmatter parsing), `directories`,
+  and `keyring` (Git and credentials, ADR-010), `saphyr` (YAML
+  parsing, ADR-003), `directories`,
   `fs4` (file locks), `clap`, `serde`, `tokio`.
 - **Releases:** built in GitHub Actions for every target, published on GitHub
   Releases with checksums and build provenance attestations. macOS binaries
