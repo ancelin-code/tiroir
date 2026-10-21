@@ -62,6 +62,13 @@ pub struct Hit { pub store: String, pub drawer: Option<String>, pub path: String
 pub struct SearchResult { pub hits: Vec<Hit>, pub abstained: bool,
                           pub degraded: Vec<Degraded> }   // VectorsPending, ModelLoading
 
+pub enum LinkKind { Explicit, Mention }
+/// `other` is the file or drawer at the other end; never its content (L4).
+pub struct Link { pub kind: LinkKind, pub source: String, pub section: Option<String>,
+                  pub other: String, pub other_drawer: Option<DrawerRef>,
+                  pub matched_text: String, pub resolved: bool }
+pub struct LinkList { pub outgoing: Vec<Link>, pub incoming: Vec<Link> }
+
 pub enum DetectedVia { Name, Cwd }
 pub struct Detection { pub drawer: DrawerRef, pub matched_text: String, pub via: DetectedVia }
 pub struct Ambiguity { pub matched_text: String, pub candidates: Vec<DrawerRef> }
@@ -103,6 +110,7 @@ impl Workspace {
     pub fn list_drawers(&self, store: Option<&str>, drawer_type: Option<&str>) -> Result<Vec<DrawerLine>, Error>;
     pub fn read(&self, target: &ReadTarget, scope: &Scope) -> Result<ReadResult, Error>;
         // ReadTarget: Summary(DrawerRef) | Log { drawer, limit, before } | Entry(DrawerRef, String) | Shared { store, path }
+    pub fn links(&self, target: &ReadTarget, scope: &Scope) -> Result<LinkList, Error>;   // L4, ADR-014
     pub fn search(&self, query: &str, scope: &Scope, filters: &Filters, limit: usize) -> Result<SearchResult, Error>;
 
     // Context: the hook adapter and the MCP context tool use only this
@@ -178,6 +186,7 @@ assert!(done.applied);
 | Confirming a proposal whose base changed | not an error: returns a new pending proposal, or the old one marked `Stale` (Y4b) |
 | Proposal expired or unknown | `proposal.unknown` |
 | Write into a drawer purged elsewhere | `drawer.purged` (Y4e) |
+| Write holding an explicit link that resolves to nothing | `link.unresolved` (L2) |
 | Store lock not obtained within 10 s | `store.busy` |
 | Remote unreachable | not an error: `WriteOutcome.pushed == false`, change queued (Y4c) |
 | History rewritten outside tiroir | `sync.foreign-rewrite` (ADR-010) |

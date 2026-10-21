@@ -25,6 +25,7 @@ these shapes; every reader accepts them.
     summary.md
     log/<yyyy>/<entry file>.md
   .tiroir/purges.yaml         purge records (created by the first purge)
+  .tiroir/moves.yaml          drawer moves (created by the first migration moving drawers)
 ```
 
 No other top-level entries are written by tiroir. Files tiroir does not know
@@ -98,6 +99,27 @@ Generated: store name and description, layout explanation, then one line per
 drawer, `- [[<drawer id>/summary]] — <label>: <names>`, grouped by type and
 sorted by drawer id. Written in the store language. After a replay or merge it
 is regenerated from the resulting tree, never merged.
+
+### Links
+
+Explicit links (ADR-014) are wikilinks `[[<path>]]`, `[[<path>#<heading>]]`
+or `[[<path>|<label>]]`, `<path>` relative to the store root without `.md`:
+`[[clients/c042/summary]]`, `[[shared/procedures/relance-tva]]`,
+`[[clients/c042/log/2026/2026-10-21T143205Z-alice-k3f9]]`. They resolve only
+within the store; links inside code spans and code blocks are ignored. A link
+masked by a purge is replaced with the text `[purged]`.
+
+### `.tiroir/moves.yaml`
+
+```yaml
+moves:
+  - from: clients/c042
+    to: clients/2026/c042
+    date: 2026-11-03T09:12:00Z
+```
+
+Append-only, except that a purge removes the moves involving purged paths.
+tiroir resolves a link to a moved path by following the moves in order.
 
 ### `.tiroir/purges.yaml`
 

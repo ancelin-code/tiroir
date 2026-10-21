@@ -29,11 +29,12 @@ refused when stdin is not a terminal for `purge`.
 | `tiroir drawers [--type <t>]` | List drawers with their names. |
 | `tiroir search <query> [--drawer <ref>]... [--all-drawers] [--type] [--kind] [--since] [--until] [--field k=v]... [--limit n]` | Search (R1–R6); prints an abstention explicitly. |
 | `tiroir read <ref> [--log] [--limit n]` | Show a summary, a log or an entry. |
+| `tiroir links <ref> [--drawer <ref>]... [--all-drawers]` | Outgoing and incoming links of a drawer or file, with kind and matched text (L4). |
 | `tiroir log <drawer ref> [<text> \| -]` | Append a log entry (proposal on team stores). |
 | `tiroir proposals [list\|show <id>\|confirm <id>\|discard <id>]` | Pending, stale and outside-edit proposals. |
 | `tiroir sync` | Sync now; prints the sync report. |
 | `tiroir index [--rebuild]` | Bring indexes up to date, or rebuild them (R7). |
-| `tiroir doctor` | Validate configuration, schemas, metadata, sections, weak names, model, index freshness, keys, remotes, skill freshness. |
+| `tiroir doctor` | Validate configuration, schemas, metadata, sections, links, weak names, model, index freshness, keys, remotes, skill freshness. |
 | `tiroir migrate --schema <file> [--rename old=new]... [--apply]` | Dry run by default (I4); `--apply` asks to confirm. |
 | `tiroir purge <drawer ref \| entry id \| shared path> [--apply]` | Dry run by default (E1); `--apply` asks the user to type the drawer id. |
 | `tiroir eval [--queries <file>] [--calibrate]` | Evaluation report (V1); `--calibrate` stores the thresholds (ADR-006). |
@@ -44,7 +45,7 @@ refused when stdin is not a terminal for `purge`.
 
 **Exit codes:** `0` success (including an abstaining search and a dry run);
 `1` operation failed; `2` usage error; `3` refused by an invariant or a purge
-record (`log.modified`, `drawer.purged`, `scope.denied`); `4` confirmation
+record (`log.modified`, `drawer.purged`, `scope.denied`, `link.unresolved`); `4` confirmation
 declined; `5` store busy.
 
 ## Example

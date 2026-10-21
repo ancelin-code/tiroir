@@ -15,19 +15,24 @@ every clone must learn that the rewrite happened.
 
 - **Preconditions:** the store is synced, nothing is queued locally, and the
   store lock is held.
-- **Dry run:** lists the files removed and the number of commits rewritten or
+- **Dry run:** lists the files removed, the files whose links to purged
+  content are masked, the files that mention the purged drawer's names in
+  plain text (left unchanged), and the number of commits rewritten or
   dropped. The purge itself needs a confirmation naming the drawer or entry
   (E1), through the proposal mechanism (ADR-012).
 - **Rewrite:** tiroir walks the branch from its root with libgit2 (ADR-010)
-  and rebuilds each commit with the purged paths removed from its tree,
-  dropping commits left empty, keeping authors and dates, and replacing the
-  message of every commit whose trailers reference a purged drawer with
-  `tiroir: purged`. libgit2 has no `filter-branch`, so this is tiroir code,
+  and rebuilds each commit: the purged paths are removed from its tree; in
+  the remaining files, every explicit link to a purged path becomes the text
+  `[purged]` and the moves involving purged paths leave `.tiroir/moves.yaml`
+  (ADR-014); commits left empty are dropped; authors and dates are kept; and
+  the message of every commit whose trailers reference a purged drawer
+  becomes `tiroir: purged`. libgit2 has no `filter-branch`, so this is tiroir code,
   covered by the same multi-clone tests as sync.
 - **Purge record:** the rewritten head gets one more commit adding an entry to
   `.tiroir/purges.yaml`: the next epoch number, the date, the author, a SHA-256
   digest of each purged path salted with the store id, and the Git blob ids of
-  the purged files. Paths and content never appear in the record.
+  the purged files and of the previous versions of the files whose links were
+  masked. Paths and content never appear in the record.
 - **Publication:** force-push, only if the remote head is still the one the
   rewrite started from; otherwise abandon the rewrite and start over.
 - **Local cleanup:** libgit2 has no garbage collection, so tiroir repacks the

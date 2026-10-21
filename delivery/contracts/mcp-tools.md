@@ -24,7 +24,7 @@ Server `instructions`: one sentence pointing to the memory skill (ADR-013).
 |---|---|---|---|
 | `tiroir_context` | `text` (string, required): the user's request; `cwd` (string, optional) | Detected drawers with the text that matched, ambiguities, conventions on first call (C5a), injected blocks (C4). Empty result says "no drawer named". | read-only |
 | `tiroir_search` | `query` (required); `drawers` (list of drawer refs); `all_drawers` (boolean, default false, X2); `store`, `type`, `kind`, `since`, `until`, `fields` (object) filters; `limit` (default 10, max 30) | Hits with store, drawer, path, kind, section, date, author; or an explicit abstention (R5); degraded mode notes. | read-only |
-| `tiroir_read` | `what`: `summary` \| `log` \| `entry` \| `shared` \| `drawers` (required); `ref` (drawer ref, entry id or shared path; required except for `drawers`); `drawers` (active drawers, for scope); `limit`, `before` (for `log`); `store`, `type` (for `drawers`) | The requested content, or the drawer list with names (C5b). | read-only |
+| `tiroir_read` | `what`: `summary` \| `log` \| `entry` \| `shared` \| `drawers` \| `links` (required); `ref` (drawer ref, entry id or shared path; required except for `drawers`); `drawers` (active drawers, for scope); `all_drawers` (for `links`, X2); `limit`, `before` (for `log`); `store`, `type` (for `drawers`) | The requested content, the drawer list with names (C5b), or the outgoing and incoming links of `ref` with kind and matched text, filtered by scope (L4). | read-only |
 | `tiroir_write` | `action`: `log` \| `summary` \| `create_drawer` \| `shared` (required); `drawer` (drawer ref, for `log`, `summary`); `store`, `type`, `fields` (for `create_drawer`); `path` (for `shared`); `text` (new body or full new summary/document); `intent` (one line: what the change is for, required for `summary` and `shared`) | Outcome: applied (with store), or the pending proposal (diff, store, audience) | destructive: false |
 | `tiroir_confirm` | `proposal_id` (required); `decision`: `apply` \| `discard` (required) | Outcome: applied, discarded, or a new proposal if the base changed (Y4b) | destructive: true |
 | `tiroir_status` | `store` (optional) | Stores with audience and sync state, pending and stale proposals (with intent for stale ones), outside edits awaiting confirmation (Y9), queued changes. | read-only |
@@ -70,7 +70,7 @@ and a message free of memory content.
 | Ref outside the given `drawers` scope | `scope.denied` |
 | `all_drawers` combined with `drawers` | `params.invalid` |
 | Unknown store, drawer, proposal | `store.unknown`, `drawer.unknown`, `proposal.unknown` |
-| Write refused by schema or purge | `schema.invalid`, `metadata.invalid`, `drawer.purged` |
+| Write refused by schema, purge or link check | `schema.invalid`, `metadata.invalid`, `drawer.purged`, `link.unresolved` |
 | Store busy | `store.busy`, retry advised |
 | Elicitation declined or cancelled by the user | not an error: outcome `discarded` |
 

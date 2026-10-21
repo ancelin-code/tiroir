@@ -42,7 +42,8 @@ choices behind them.
 - **Entry document:** `MEMORY.md` at the root, compatible with the Agent Memory
   Repo format: what the store is, its layout, and links to every drawer. It is
   **derived**: tiroir regenerates it after every change and never merges it.
-- **tiroir's own state in the store:** `.tiroir/` (purge records, ADR-011).
+- **tiroir's own state in the store:** `.tiroir/` (purge records, ADR-011;
+  drawer moves, ADR-014).
   Nothing machine-specific is ever written to the store.
 - **Identifiers:** a drawer's identifier is its folder path relative to the
   store root (`clients/c042`). Path segments are lowercase ASCII slugs, so

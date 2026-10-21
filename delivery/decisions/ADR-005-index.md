@@ -19,8 +19,8 @@ brute-force vector search fast enough below about 50,000 chunks.
   - Vectors: float32 arrays stored as BLOBs, one row per chunk and model,
     loaded into memory and searched by brute-force dot product in the reading
     process.
-  - Metadata, files, chunks and the detection names table (ADR-008) are plain
-    tables in the same file.
+  - Metadata, files, chunks, the detection names table (ADR-008) and the
+    links table (ADR-014) are plain tables in the same file.
 - **Location:** one file per store in the data directory
   (`<data>/stores/<store-id>/index.sqlite`), never inside the store.
 - **Source:** the index reflects the tree of the store's last commit, not the
