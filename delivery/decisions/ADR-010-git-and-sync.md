@@ -65,10 +65,13 @@ holds (Y7, Y8). Concurrent writes must never lose data or show a Git conflict
      history outside tiroir.
 - **When:** at MCP server start and before every write (Y3), and on demand
   (`tiroir sync`). The hook never syncs.
-- **Outside edits:** before every operation tiroir compares the working copy
-  with the last commit. Differences become pending proposals of kind
-  `outside-edit` (ADR-012); the files keep their edited content until the
-  user confirms or restores them.
+- **Outside edits:** before every write and every sync, tiroir compares the
+  working copy with the last commit. Differences become pending proposals of
+  kind `outside-edit` (ADR-012); the files keep their edited content until the
+  user confirms or restores them. Reads (search, the hook) skip this check:
+  they use the index, which reflects the last commit (ADR-005), and the
+  comparison walks every file in the store, so its cost grows with the store
+  while the hook's budget does not (P1, ADR-009).
 
 ## Alternatives considered
 
