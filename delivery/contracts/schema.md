@@ -1,4 +1,4 @@
-# Contract: store schema (`tiroir.yaml`)
+# Contract: store schema (`tiroir.toml`)
 
 **Status:** draft
 **Parties:** core (schema loading and validation, store, index, detection,
@@ -13,8 +13,11 @@ so no organisation is ever code (invariant).
 
 ## Shape
 
-YAML 1.2, UTF-8, at the store root. Unknown keys are errors, so a typo never
-silently disables a rule. Paths are relative to the store root and use `/`.
+TOML 1.0, UTF-8, at the store root, read and rewritten with `toml_edit` so
+comments and layout survive migrations (ADR-003). Unknown keys are errors, so
+a typo never silently disables a rule. Paths are relative to the store root
+and use `/`. Field locations below use dotted keys (`store.name` is `name` in
+the `[store]` table).
 
 ### Top level
 
@@ -30,7 +33,7 @@ silently disables a rule. Paths are relative to the store root and use `/`.
 | `shared.topics` | list of string | no | Topics of the shared space, used in the memory skill's description (C5c). |
 | `shared.conventions` | path | no | Shared document loaded on first use in a session (C5a). Default `shared/conventions.md` when it exists. |
 | `context.conventions_max_tokens` | integer | no | Cap on the conventions block (C5a). Default 1500. |
-| `drawer_types` | map of name → drawer type | yes | At least one. Names are slugs (`client`, `repo`). |
+| `drawer_types` | table of name → drawer type | yes | At least one, as `[drawer_types.<name>]` tables. Names are slugs (`client`, `repo`). |
 
 ### Drawer type
 
@@ -39,7 +42,7 @@ silently disables a rule. Paths are relative to the store root and use `/`.
 | `label` | string | yes | Human name in the memory language (`Client`, `Dépôt`). |
 | `label_plural` | string | no | Plural, for the skill description and `MEMORY.md`. |
 | `path` | pattern | yes | Folder of each drawer, with `{field}` placeholders replaced by the slug of that field's value: `clients/{code}`. Must contain at least one placeholder of a required field, and patterns of two types must not overlap. |
-| `fields` | map of name → field | yes | Metadata fields, stored in the summary's frontmatter. Names are slugs; `type`, `author`, `date` are reserved. |
+| `fields` | table of name → field (inline tables) | yes | Metadata fields, stored in the summary's frontmatter. Names are slugs; `type`, `author`, `date` are reserved. |
 | `summary.template` | path | yes | Markdown template of a new summary (see below). |
 | `summary.sections` | list of string | yes | Level-2 section headings, in order. At least one. The units of merge (Y4b) and injection (C4). |
 | `log.template` | path | no | Markdown body template of a new log entry. Default: empty body. |
@@ -68,37 +71,44 @@ generated from the fields and is not part of the template.
 
 ## Example
 
-```yaml
-tiroir: 1
-store:
-  id: 4b7e2c1a-9d3f-4e8b-a1c2-5f6d7e8f9a0b
-  name: cabinet-exemple
-  audience: team
-  language: fr
-  description: Mémoire du cabinet, un tiroir par client.
-shared:
-  topics: [procédures, modèles de lettres, calendrier fiscal]
-drawer_types:
-  client:
-    label: Client
-    label_plural: Clients
-    path: clients/{code}
-    fields:
-      code: {type: text, required: true, pattern: "C[0-9]{3}"}
-      name: {type: text, required: true}
-      aliases: {type: list}
-      legal_form: {type: enum, values: [EI, SARL, SAS, SCI, Association]}
-      fiscal_year_end: {type: date}
-    summary:
-      template: templates/client-summary.md
-      sections: [Identité, Régime fiscal, Missions, Contacts, Points d'attention, Échéances]
-    log:
-      template: templates/client-log.md
-    detect:
-      names: [code, name, aliases]
-    inject:
-      sections: [Identité, Points d'attention, Échéances]
-      max_tokens: 800
+```toml
+tiroir = 1
+
+[store]
+id = "4b7e2c1a-9d3f-4e8b-a1c2-5f6d7e8f9a0b"
+name = "cabinet-exemple"
+audience = "team"
+language = "fr"
+description = "Mémoire du cabinet, un tiroir par client."
+
+[shared]
+topics = ["procédures", "modèles de lettres", "calendrier fiscal"]
+
+[drawer_types.client]
+label = "Client"
+label_plural = "Clients"
+path = "clients/{code}"
+
+[drawer_types.client.fields]
+code = { type = "text", required = true, pattern = "C[0-9]{3}" }
+name = { type = "text", required = true }
+aliases = { type = "list" }
+legal_form = { type = "enum", values = ["EI", "SARL", "SAS", "SCI", "Association"] }
+fiscal_year_end = { type = "date" }
+
+[drawer_types.client.summary]
+template = "templates/client-summary.md"
+sections = ["Identité", "Régime fiscal", "Missions", "Contacts", "Points d'attention", "Échéances"]
+
+[drawer_types.client.log]
+template = "templates/client-log.md"
+
+[drawer_types.client.detect]
+names = ["code", "name", "aliases"]
+
+[drawer_types.client.inject]
+sections = ["Identité", "Points d'attention", "Échéances"]
+max_tokens = 800
 ```
 
 ## Error cases
@@ -108,7 +118,7 @@ only the first, each with file, location and expected value.
 
 | Condition | Result |
 |---|---|
-| Unknown key, wrong type, missing required key | `schema.invalid` with the YAML path, e.g. `drawer_types.client.fields.code.type` |
+| Unknown key, wrong type, missing required key, TOML syntax error | `schema.invalid` with the key path and line, e.g. `drawer_types.client.fields.code.type` (line 18) |
 | `tiroir` greater than the running version supports | `schema.unsupported-version`; nothing is read or written |
 | Path pattern without a required-field placeholder, or overlapping another type | `schema.invalid-path` |
 | `inject.sections` or template heading not in `summary.sections` | `schema.unknown-section` |

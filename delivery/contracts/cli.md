@@ -1,7 +1,7 @@
 # Contract: command-line interface
 
 **Status:** draft
-**Parties:** `tiroir.cli` (provider); the Claude Code plugin and the `.mcpb`
+**Parties:** `tiroir-cli` (provider); the Claude Code plugin and the `.mcpb`
 bundle (which run `tiroir mcp` and `tiroir hook`), the documentation, CI
 benchmarks and the evaluation harness (consumers).
 

@@ -125,7 +125,7 @@ The design must not preclude, for a later release:
 
 **Git remote**: any remote over SSH or HTTPS. The documentation recommends a self-hosted Forgejo for confidential data and covers one hosted provider.
 
-Open technical questions, each settled by a decision record: runtime (Python preferred); storage and index technology; embedding model(s) and how users switch between them; chunking per entry kind; fusion and ranking strategy, with identifier boosting and an abstention threshold; drawer detection method; how tiroir runs Git and holds its credential; how the adapter abstraction is shaped; packaging and distribution (including Claude Desktop bundles).
+Open technical questions, each settled by a decision record: runtime (Rust, chosen); storage and index technology; embedding model(s) and how users switch between them; chunking per entry kind; fusion and ranking strategy, with identifier boosting and an abstention threshold; drawer detection method; how tiroir runs Git and holds its credential; how the adapter abstraction is shaped; packaging and distribution (including Claude Desktop bundles).
 
 ## 10. Harness-agnostic roadmap
 
@@ -173,7 +173,8 @@ Real deployments keep their stores (data and configuration) in their own private
 - Erasure (purge of a drawer, history included) is a v1 requirement.
 - Session capture stays out of scope; it is left to other tools.
 - Licence: Apache-2.0.
-- Runtime: Python is preferred, to be confirmed by a decision record.
+- Runtime: Rust, one signed binary per platform (ADR-002), after Python was
+  considered and measured.
 - Access control is per store, not per drawer: a machine uses several stores
   (for example company-wide, leadership, personal), each with a `personal` or
   `team` audience. Every write to a team store is shown with its audience and

@@ -12,13 +12,16 @@ in use (C5c), so it cannot be a static file shipped in a package.
 
 ## Decision
 
-- **Packages and dependency rule** (enforced in CI by an import-contract
-  check):
-  - `tiroir.core`: configuration, schema, store, index, retrieval, detection,
-    context, proposals, sync, purge, migration, evaluation. Imports nothing
-    from the other packages.
-  - `tiroir.mcp`, `tiroir.cli`: surfaces over the core; never import an adapter.
-  - `tiroir.adapters.<host>`: one package per host; imports the core only.
+- **Crates and dependency rule**, one Cargo workspace, enforced by the
+  compiler since a crate can only use what it declares as a dependency:
+  - `tiroir-core`: configuration, schema, store, index, retrieval, detection,
+    context, proposals, sync, purge, migration, evaluation. Depends on no
+    other tiroir crate and on no host-specific code (U5).
+  - `tiroir-mcp`, `tiroir-cli`: surfaces over the core; they never depend on an
+    adapter crate.
+  - `tiroir-adapter-<host>`: one crate per host, depending on the core only.
+  - `tiroir`: the binary, wiring the CLI, the MCP server and the adapters
+    together (ADR-002).
 - **Adapter interface:** an adapter provides `install`, `uninstall` and
   `status` (each with a dry run that prints the planned changes), and
   translates host events into calls on the core's context API and back
@@ -27,10 +30,10 @@ in use (C5c), so it cannot be a static file shipped in a package.
 - **Claude Code adapter:** a Claude Code plugin published from this repository
   (marketplace entry), declaring the MCP server (`tiroir mcp`), the
   `UserPromptSubmit` hook (`tiroir hook claude-code user-prompt-submit`, 2 s
-  timeout) and the static init skill. Both commands run the executable
-  installed by `uv tool install tiroir`. `tiroir install claude-code` checks
-  that the executable is on the path, installs or checks the plugin, and
-  writes the generated memory skill.
+  timeout) and the static init skill. Both commands run the installed
+  `tiroir` binary (ADR-002). `tiroir install claude-code` checks that the
+  binary is on the path, installs or checks the plugin, and writes the
+  generated memory skill.
 - **Claude Desktop:** no adapter in the hook sense. The `.mcpb` bundle
   (ADR-002) installs the MCP server. The init skill is published as a skill
   archive with each release; the memory skill archive is generated after init

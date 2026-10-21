@@ -14,11 +14,11 @@ store shared with others.
 ## Decision
 
 - **What belongs to the store**, shared by everyone who clones it, lives in its
-  `tiroir.yaml`: a store id (UUID generated at creation), a name, the audience
+  `tiroir.toml`: a store id (UUID generated at creation), a name, the audience
   (`personal` or `team`) and the memory language.
 - **What belongs to the machine** lives in one configuration file in the
-  user's configuration directory (`platformdirs.user_config_dir("tiroir")`,
-  file `config.yaml`):
+  user's configuration directory (the platform's standard location, through
+  the `directories` crate), file `config.toml`:
   - the user's identity: a handle (slug used in log file names and commits)
     and a display name;
   - the stores in use: their local path and remote URL, keyed by store id;
@@ -26,7 +26,7 @@ store shared with others.
     `personal` store when one exists.
 - **What tiroir derives per machine** (indexes, keys, pending proposals,
   session markers, locks) lives in the user's data directory
-  (`platformdirs.user_data_dir("tiroir")`), in one subfolder per store id.
+  (the platform's standard data location), in one subfolder per store id.
 - Store working copies default to a visible `Tiroir/<store name>` folder in
   the user's home directory, so a non-developer can find and read them.
 

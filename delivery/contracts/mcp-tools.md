@@ -1,7 +1,7 @@
 # Contract: MCP tools
 
 **Status:** draft
-**Parties:** `tiroir.mcp` (provider); the memory and init skills, the Claude
+**Parties:** `tiroir-mcp` (provider, on `rmcp`); the memory and init skills, the Claude
 Desktop bundle, the Claude Code plugin, the C7 acceptance script (consumers).
 
 ## Purpose

@@ -17,14 +17,14 @@ these shapes; every reader accepts them.
 
 ```text
 <store>/
-  tiroir.yaml                 schema (contract schema.md)
+  tiroir.toml                 schema (contract schema.md)
   MEMORY.md                   derived entry document, regenerated, never merged
   templates/                  templates referenced by the schema
   shared/                     shared space: *.md, sub-folders allowed
   <drawer path>/              one per drawer, from the type's `path` pattern
     summary.md
     log/<yyyy>/<entry file>.md
-  .tiroir/purges.yaml         purge records (created by the first purge)
+  .tiroir/purges.toml         purge records (created by the first purge)
 ```
 
 No other top-level entries are written by tiroir. Files tiroir does not know
@@ -59,8 +59,11 @@ legal_form: SARL
 ...
 ```
 
-- Frontmatter: `type` (the drawer type name), then the type's fields. Values
-  follow the field types of `schema.md`. Absent optional fields are omitted.
+- Frontmatter: YAML, `type` (the drawer type name), then the type's fields in
+  schema order. Values follow the field types of `schema.md`. Absent optional
+  fields are omitted. tiroir writes frontmatter in one canonical form
+  (ADR-003): strings double-quoted when they need quoting, lists in flow
+  style, dates unquoted.
 - Body: an optional level-1 title, then exactly the declared level-2 sections
   in declared order. Text before the first section and level-3 headings inside
   sections are allowed. A section's content is everything up to the next
@@ -96,15 +99,15 @@ drawer, `- [[<drawer id>/summary]] — <label>: <names>`, grouped by type and
 sorted by drawer id. Written in the store language. After a replay or merge it
 is regenerated from the resulting tree, never merged.
 
-### `.tiroir/purges.yaml`
+### `.tiroir/purges.toml`
 
-```yaml
-purges:
-  - epoch: 1
-    date: 2026-10-21T15:00:00Z
-    author: alice
-    path_digests: [9f2c…]          # sha256(store.id + "/" + path), hex
-    blobs: [3b18e512dba79e4c8300dd08aeb37f8e728b8dad]
+```toml
+[[purges]]
+epoch = 1
+date = 2026-10-21T15:00:00Z
+author = "alice"
+path_digests = ["9f2c…"]   # sha256(store.id + "/" + path), hex
+blobs = ["3b18e512dba79e4c8300dd08aeb37f8e728b8dad"]
 ```
 
 Append-only; entries are never edited or removed.

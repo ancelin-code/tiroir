@@ -1,7 +1,7 @@
 # Contract: Claude Code prompt hook
 
 **Status:** draft
-**Parties:** `tiroir.adapters.claude_code` (provider), the Claude Code plugin
+**Parties:** `tiroir-adapter-claude-code` (provider), the Claude Code plugin
 (hook declaration), `tiroir.core` context API (`core-api.md`).
 
 ## Purpose
@@ -13,8 +13,8 @@ adapter and the core agree on one exchange.
 ## Shape
 
 **Declaration** in the plugin's hooks configuration: event `UserPromptSubmit`,
-command `tiroir hook claude-code user-prompt-submit` (the executable
-installed by `uv tool install tiroir`, never `uvx`), timeout 2 seconds.
+command `tiroir hook claude-code user-prompt-submit` (the installed `tiroir`
+binary, ADR-002), timeout 2 seconds.
 
 **Input** (stdin, JSON, as sent by Claude Code):
 

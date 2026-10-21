@@ -1,4 +1,4 @@
-# ADR-010: Drive Git with dulwich over SSH deploy keys, keep history linear and sync by replaying operations
+# ADR-010: Drive Git with libgit2 over SSH or HTTPS, keep history linear and sync by replaying operations
 
 **Status:** proposed
 **Date:** 2026-10-21
@@ -12,28 +12,29 @@ holds (Y7, Y8). Concurrent writes must never lose data or show a Git conflict
 
 ## Decision
 
-- **Library:** dulwich (pure Python). Verified on 2026-10-21: dulwich 1.2
-  provides fetch, push, reset, merge, rebase and `filter_branch` (with index
-  filters and empty-commit pruning, used by ADR-011).
-- **Transports:** SSH and HTTPS (Y7a). No `git` or `ssh` executable is
-  required.
-  - SSH: tiroir implements dulwich's `SSHVendor` interface on paramiko
-    (dulwich 1.2 only ships vendors that call an `ssh` executable).
-  - HTTPS: dulwich's HTTP client, with the operating system's trust store
-    (`truststore`) so corporate TLS-inspection authorities are accepted, and
-    the proxy from the standard `HTTPS_PROXY`/`NO_PROXY` variables or tiroir's
+- **Library:** libgit2 through the `git2` crate, with libgit2 and libssh2
+  vendored and linked into the binary (ADR-002). It provides clone, fetch,
+  push, commits, trees and revision walking; tiroir builds sync and purge on
+  them. No `git` or `ssh` executable is required.
+- **Transports:** SSH and HTTPS (Y7a).
+  - SSH: libssh2. Host keys are checked in libgit2's certificate callback,
+    trusted on first use and pinned in tiroir's own known-hosts file.
+  - HTTPS: libgit2's platform TLS (WinHTTP on Windows, the system TLS stack on
+    macOS, OpenSSL with the system certificate locations on Linux), so the
+    certificate authorities installed by a company's TLS inspection are
+    accepted. Proxies come from libgit2's automatic detection or from tiroir's
     configuration.
 - **Credential, one per store and machine, set up once (Y7):**
-  - SSH: tiroir generates an Ed25519 key pair in the data directory, readable
-    by the user only, and shows the public key with the host's page where to
-    add it as a **deploy key with write access**. Host keys are trusted on
-    first use and pinned in tiroir's own known-hosts file.
+  - SSH: tiroir generates a key pair (Ed25519, or ECDSA P-256 on a platform
+    where the bundled libssh2 lacks Ed25519) and shows the public key with the
+    host's page where to add it as a **deploy key with write access**. The
+    private key never leaves the machine.
   - HTTPS: the user creates a token limited to the store's repository with
     read and write access to its content (GitHub fine-grained token, GitLab
     project access token; on Forgejo, a token of a dedicated account that
     only has access to that repository) and pastes it once into tiroir. The
     connect flow links to the exact page and lists the permissions to tick.
-  - Both are stored in the OS credential store (`keyring`: macOS Keychain,
+  - Both are stored in the OS credential store (`keyring` crate: macOS Keychain,
     Windows Credential Manager, Secret Service on Linux), falling back to a
     user-only file in the data directory where none is available. Expiry
     dates the host reports are recorded, and `doctor` and the status tool
@@ -74,9 +75,12 @@ holds (Y7, Y8). Concurrent writes must never lose data or show a Git conflict
 - **The system `git` executable** - the most capable, but absent by default on
   Windows and on macOS without developer tools, where invoking it opens an
   install dialog, which fails the non-developer path.
-- **pygit2 (libgit2)** - fast and complete, with SSH built in, but a native
-  dependency whose SSH support varies by wheel and platform; dulwich's speed
-  is ample at a few thousand commits.
+- **gitoxide (`gix`)** - pure Rust and the better long-term fit, but push is
+  not implemented as of 2026-10-21 (its status page lists push, send-pack and
+  receive-pack as missing). To be reconsidered when it is, behind the same
+  internal Git interface.
+- **dulwich (pure Python)** - the choice of the Python design (ADR-002), not
+  usable from Rust.
 - **Git's own merge (three-way merge commits)** - would surface textual
   conflicts in summaries; replaying tiroir's own operations knows what each
   change meant and turns conflicts into proposals.
@@ -90,7 +94,9 @@ holds (Y7, Y8). Concurrent writes must never lose data or show a Git conflict
 ## Consequences
 
 Sync is tiroir code, not Git's, so it is fully testable (Y4g) but also tiroir's
-responsibility to get right. A deploy key grants one machine access to one
+responsibility to get right. libgit2 brings C code (and OpenSSL on Linux) into
+the build; its TLS and SSH behaviour per platform is verified early with real
+remotes behind a proxy and with SSH blocked. A deploy key grants one machine access to one
 repository, so a machine with three stores holds three keys, and GitHub refuses
 to reuse a deploy key across repositories, which this scheme never does.
 Revoking a machine is deleting its deploy key or token on the host. HTTPS

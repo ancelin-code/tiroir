@@ -18,25 +18,31 @@ every clone must learn that the rewrite happened.
 - **Dry run:** lists the files removed and the number of commits rewritten or
   dropped. The purge itself needs a confirmation naming the drawer or entry
   (E1), through the proposal mechanism (ADR-012).
-- **Rewrite:** dulwich `filter_branch` with an index filter removing the
-  purged paths, pruning commits left empty, and replacing the message of every
-  commit whose trailers reference a purged drawer with `tiroir: purged`.
+- **Rewrite:** tiroir walks the branch from its root with libgit2 (ADR-010)
+  and rebuilds each commit with the purged paths removed from its tree,
+  dropping commits left empty, keeping authors and dates, and replacing the
+  message of every commit whose trailers reference a purged drawer with
+  `tiroir: purged`. libgit2 has no `filter-branch`, so this is tiroir code,
+  covered by the same multi-clone tests as sync.
 - **Purge record:** the rewritten head gets one more commit adding an entry to
-  `.tiroir/purges.yaml`: the next epoch number, the date, the author, a SHA-256
+  `.tiroir/purges.toml`: the next epoch number, the date, the author, a SHA-256
   digest of each purged path salted with the store id, and the Git blob ids of
   the purged files. Paths and content never appear in the record.
 - **Publication:** force-push, only if the remote head is still the one the
   rewrite started from; otherwise abandon the rewrite and start over.
-- **Local cleanup:** delete the now unreachable objects and reflog entries, the
-  index rows and any pending proposal touching the purged paths. A test
-  asserts that the purged blobs no longer exist in the local object store.
+- **Local cleanup:** libgit2 has no garbage collection, so tiroir repacks the
+  reachable objects into a new pack with libgit2's pack builder, deletes the
+  old packs and the unreachable loose objects, and clears the reflogs. It also
+  deletes the index rows and any pending proposal touching the purged paths. A
+  test asserts that the purged blobs no longer exist in the local object
+  store.
 - **Other clones:** when a fetch finds a remote head that does not descend from
-  the last known one and a higher epoch in `purges.yaml`, tiroir resets to the
+  the last known one and a higher epoch in `purges.toml`, tiroir resets to the
   remote, deletes the unreachable objects, and replays the queued local
   operations (ADR-010) except those based on a pre-purge commit that touch a
   purged path, which are refused and reported (Y4e).
 - **Push guard:** tiroir refuses to push any commit containing a blob listed
-  in `purges.yaml` (E2). A new drawer created after the purge under the same
+  in `purges.toml` (E2). A new drawer created after the purge under the same
   path is allowed: it is new content, and refusing it would block a returning
   client forever.
 
@@ -48,7 +54,7 @@ every clone must learn that the rewrite happened.
   avoids rewriting history, but makes the files unreadable without tiroir
   (S5) and needs key distribution to every team member.
 - **`git filter-repo`** - the reference tool, but needs the `git` executable
-  (ADR-010).
+  and Python (ADR-010).
 - **Recording purged paths in clear** - simplest to check, but publishes the
   very names (client names in paths) the purge is meant to erase.
 

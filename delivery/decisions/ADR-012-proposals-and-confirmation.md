@@ -11,7 +11,8 @@ write to a team store (W5), confirming outside edits (Y9), re-based changes
 the user, so "the agent says the user agreed" is weak. MCP elicitation lets a
 server ask the user directly through the host's interface: Claude Code
 supports it (since 2.1.76); Claude Desktop support is not confirmed as of
-2026-10-21.
+2026-10-21. The Rust MCP SDK (`rmcp`) supports elicitation on the server
+side.
 
 ## Decision
 

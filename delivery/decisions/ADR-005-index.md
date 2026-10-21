@@ -13,11 +13,12 @@ brute-force vector search fast enough below about 50,000 chunks.
 
 ## Decision
 
-- **Engine:** SQLite through Python's standard `sqlite3` module.
+- **Engine:** SQLite, bundled into the binary by `rusqlite` with FTS5.
   - Full text: an FTS5 table with two columns, one with language-normalised
     and stemmed tokens and one with raw identifier tokens (ADR-007).
   - Vectors: float32 arrays stored as BLOBs, one row per chunk and model,
-    searched by brute force with numpy in the reading process.
+    loaded into memory and searched by brute-force dot product in the reading
+    process.
   - Metadata, files, chunks and the detection names table (ADR-008) are plain
     tables in the same file.
 - **Location:** one file per store in the data directory
@@ -38,10 +39,10 @@ brute-force vector search fast enough below about 50,000 chunks.
 
 ## Alternatives considered
 
-- **SQLite with the sqlite-vec extension** - vector search in SQL, but it
-  needs `enable_load_extension`, which some Python builds lack, and adds a
-  native extension for no measurable gain at our size. Can replace the numpy
-  scan later behind the same index interface.
+- **SQLite with the sqlite-vec extension** - vector search in SQL, and easy
+  to link statically in Rust, but one more C dependency for no measurable gain
+  at our size. Can replace the in-memory scan later behind the same index
+  interface.
 - **DuckDB (agentcairn's choice)** - good analytics engine, but a larger
   dependency, and its full-text extension is normally installed from DuckDB's
   extension repository at run time, which conflicts with the no-egress
