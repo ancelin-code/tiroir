@@ -26,8 +26,8 @@ project owner reviews Python fluently.
     launch (measured 2026-10-21), most of the hook's budget (ADR-009), and
     could run a different version for the hook and the server.
 - **Pinned dependency set** (all with wheels for the three platforms, no
-  compiler needed): the MCP Python SDK, `dulwich` and `paramiko` (Git,
-  ADR-010), `fastembed` with `onnxruntime` (embeddings, ADR-006), `numpy`,
+  compiler needed): the MCP Python SDK, `dulwich`, `paramiko`, `keyring`
+  and `truststore` (Git and credentials, ADR-010), `fastembed` with `onnxruntime` (embeddings, ADR-006), `numpy`,
   `PyStemmer` (stemming, ADR-007), `ruamel.yaml` (schema round-trip,
   ADR-003), `platformdirs`, `filelock`.
 - **Development:** `uv` for environments, `pytest`, `ruff`, and CI on macOS,

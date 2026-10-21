@@ -23,7 +23,7 @@ refused when stdin is not a terminal for `purge`.
 |---|---|
 | `tiroir init <path> --preset <name> --name <store> --audience personal\|team [--remote <url>]` | Create a store from a preset or `--schema <file>`; shows the plan, asks to confirm. |
 | `tiroir store list` | Stores in use, audience, default, sync state. |
-| `tiroir store connect <remote> [--path <dir>]` | Generate the deploy key, print the public key and host steps, wait for access, clone, register. |
+| `tiroir store connect <remote> [--path <dir>]` | SSH remote: generate the deploy key, print the public key and host steps. HTTPS remote: print the host's token page and permissions, then read the token without echo. Then wait for access, clone, register. |
 | `tiroir store remove <name>` | Stop using a store on this machine (asks whether to delete the local copy and key). |
 | `tiroir store default <name>` | Set the default store for writes (M4). |
 | `tiroir drawers [--type <t>]` | List drawers with their names. |

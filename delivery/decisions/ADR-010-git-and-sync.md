@@ -15,15 +15,32 @@ holds (Y7, Y8). Concurrent writes must never lose data or show a Git conflict
 - **Library:** dulwich (pure Python). Verified on 2026-10-21: dulwich 1.2
   provides fetch, push, reset, merge, rebase and `filter_branch` (with index
   filters and empty-commit pruning, used by ADR-011).
-- **SSH transport:** tiroir implements dulwich's `SSHVendor` interface on
-  paramiko (dulwich 1.2 only ships vendors that call an `ssh` executable). No
-  `git` or `ssh` executable is required.
-- **Credential:** for each store on each machine, tiroir generates an Ed25519
-  key pair in the data directory, readable by the user only. Connecting a
-  store shows the public key and the host's page where to add it as a
-  **deploy key with write access**; that is the one step on the host (Y7).
-  Host keys are trusted on first use and pinned in tiroir's own known-hosts
-  file.
+- **Transports:** SSH and HTTPS (Y7a). No `git` or `ssh` executable is
+  required.
+  - SSH: tiroir implements dulwich's `SSHVendor` interface on paramiko
+    (dulwich 1.2 only ships vendors that call an `ssh` executable).
+  - HTTPS: dulwich's HTTP client, with the operating system's trust store
+    (`truststore`) so corporate TLS-inspection authorities are accepted, and
+    the proxy from the standard `HTTPS_PROXY`/`NO_PROXY` variables or tiroir's
+    configuration.
+- **Credential, one per store and machine, set up once (Y7):**
+  - SSH: tiroir generates an Ed25519 key pair in the data directory, readable
+    by the user only, and shows the public key with the host's page where to
+    add it as a **deploy key with write access**. Host keys are trusted on
+    first use and pinned in tiroir's own known-hosts file.
+  - HTTPS: the user creates a token limited to the store's repository with
+    read and write access to its content (GitHub fine-grained token, GitLab
+    project access token; on Forgejo, a token of a dedicated account that
+    only has access to that repository) and pastes it once into tiroir. The
+    connect flow links to the exact page and lists the permissions to tick.
+  - Both are stored in the OS credential store (`keyring`: macOS Keychain,
+    Windows Credential Manager, Secret Service on Linux), falling back to a
+    user-only file in the data directory where none is available. Expiry
+    dates the host reports are recorded, and `doctor` and the status tool
+    warn 14 days ahead.
+- **Choice of transport:** the remote URL decides. `store connect` tries the
+  URL given; when an SSH connection times out, it says SSH is probably
+  blocked and offers the HTTPS URL of the same repository.
 - **Branch and history:** one branch per store (`main`), linear, never merged.
   Each tiroir operation is one commit. Commit messages follow the
   `store-layout` contract: an operation line and trailers (operation, drawer,
@@ -63,9 +80,12 @@ holds (Y7, Y8). Concurrent writes must never lose data or show a Git conflict
 - **Git's own merge (three-way merge commits)** - would surface textual
   conflicts in summaries; replaying tiroir's own operations knows what each
   change meant and turns conflicts into proposals.
-- **HTTPS with a personal access token** - works where SSH is blocked, but
-  the user must create, paste and renew a token, against Y7. See the
-  consequences.
+- **SSH only** - the simplest credential story, but corporate networks
+  commonly block outbound SSH, which would leave those users unable to sync.
+- **HTTPS through an OAuth device or browser flow** - no token to copy, but
+  every host needs a registered OAuth application (each self-hosted Forgejo
+  too), and the broad scopes OAuth apps get on GitHub reach far beyond one
+  repository. Kept as a later improvement of the HTTPS step.
 
 ## Consequences
 
@@ -73,7 +93,8 @@ Sync is tiroir code, not Git's, so it is fully testable (Y4g) but also tiroir's
 responsibility to get right. A deploy key grants one machine access to one
 repository, so a machine with three stores holds three keys, and GitHub refuses
 to reuse a deploy key across repositories, which this scheme never does.
-Revoking a machine is deleting its deploy key on the host. Requirement Y6
-allows HTTPS remotes; this record supports SSH only in v1 because HTTPS needs a
-token the user handles. Y6 should be amended to "SSH" or HTTPS added later
-with an OAuth device flow.
+Revoking a machine is deleting its deploy key or token on the host. HTTPS
+tokens expire on most hosts, so a store over HTTPS needs a renewal step
+every few months; tiroir warns and guides it, but cannot avoid it. Forgejo has
+no repository-scoped token, hence the dedicated-account recipe in the
+documentation.
