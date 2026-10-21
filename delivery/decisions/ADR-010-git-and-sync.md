@@ -72,6 +72,30 @@ holds (Y7, Y8). Concurrent writes must never lose data or show a Git conflict
 
 ## Alternatives considered
 
+What tiroir needs from version control: offline writes synced later (Y2,
+Y4c), a history that can be purged (E1–E4), access control by a host users
+already have or can run (Y6), a library embeddable in the binary (ADR-002),
+and files any tool can read (S5). Git's merging is not used (sync replays
+tiroir operations), so it serves as transport, history and access control.
+
+- **Subversion** - its path-based authorisation would give per-drawer
+  permissions inside one repository, which Git cannot. But commits need the
+  server, so offline writes are impossible; erasing history means an
+  administrator dumping, filtering and reloading the whole repository; few
+  hosts offer it; and there is no Rust client, only the C `libsvn` with its
+  APR dependencies. Per-drawer permissions belong to the later server mode
+  instead.
+- **Mercurial, Fossil, Pijul** - distributed like Git, and Fossil and Pijul
+  have attractive purge and merge models, but almost no hosting offers them,
+  and none has a Rust library able to push. Users would have to run their own
+  server.
+- **File synchronisation (Syncthing, Nextcloud, cloud drives)** - the
+  simplest for non-developers, but no usable history, conflicts surface as
+  duplicate "conflicted copy" files, and a third-party cloud breaks the
+  no-egress invariant.
+- **A CRDT document store (Automerge)** - conflict-free by construction, but
+  needs a dedicated sync server, and the data stops being plain Markdown
+  files (S5).
 - **The system `git` executable** - the most capable, but absent by default on
   Windows and on macOS without developer tools, where invoking it opens an
   install dialog, which fails the non-developer path.
