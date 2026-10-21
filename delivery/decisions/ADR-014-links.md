@@ -20,7 +20,7 @@ itself sensitive data.
   - **Explicit:** a wikilink `[[<path>]]`, the path relative to the store root
     without `.md`, optionally followed by `#<heading>` and `|<label>`. A link
     to a drawer targets its summary (`[[clients/c042/summary]]`); a link to an
-    entry names its file (`[[clients/c042/log/2026/2026-10-21T143205Z-alice-k3f9]]`).
+    entry names its file (`[[clients/c042/log/2026/10/2026-10-21T143205Z-alice-k3f9]]`).
     These are the paths Obsidian resolves when the store is opened as a vault.
     Links inside code spans and code blocks are ignored. Markdown links
     (`[text](path.md)`) are not links for tiroir in v1.

@@ -23,7 +23,7 @@ these shapes; every reader accepts them.
   shared/                     shared space: *.md, sub-folders allowed
   <drawer path>/              one per drawer, from the type's `path` pattern
     summary.md
-    log/<yyyy>/<entry file>.md
+    log/<yyyy>/<mm>/<entry file>.md
   .tiroir/purges.yaml         purge records (created by the first purge)
   .tiroir/moves.yaml          drawer moves (created by the first migration moving drawers)
 ```
@@ -72,8 +72,12 @@ legal_form: SARL
 
 ### Log entry
 
-Path: `<drawer path>/log/<yyyy>/<yyyy-mm-dd>T<hhmmss>Z-<author>-<rand>.md`,
+Path: `<drawer path>/log/<yyyy>/<mm>/<yyyy-mm-dd>T<hhmmss>Z-<author>-<rand>.md`,
 UTC, `<author>` the author's handle, `<rand>` 4 characters of `[a-z0-9]`.
+The file name repeats the full date although the folders hold the year and
+month, so a name is unique and dated on its own (in Obsidian's search, a link,
+or a file copied elsewhere). It carries no memory content, since paths
+appear in commit trailers (Y5).
 
 ```markdown
 ---
@@ -105,7 +109,7 @@ is regenerated from the resulting tree, never merged.
 Explicit links (ADR-014) are wikilinks `[[<path>]]`, `[[<path>#<heading>]]`
 or `[[<path>|<label>]]`, `<path>` relative to the store root without `.md`:
 `[[clients/c042/summary]]`, `[[shared/procedures/relance-tva]]`,
-`[[clients/c042/log/2026/2026-10-21T143205Z-alice-k3f9]]`. They resolve only
+`[[clients/c042/log/2026/10/2026-10-21T143205Z-alice-k3f9]]`. They resolve only
 within the store; links inside code spans and code blocks are ignored. A link
 masked by a purge is replaced with the text `[purged]`.
 
@@ -168,7 +172,7 @@ display name with the address `<handle>@tiroir.invalid`.
 A drawer creation followed by one log entry produces two commits: the first
 adds `clients/c042/summary.md` and regenerates `MEMORY.md`
 (`Tiroir-Op: drawer-create`); the second adds
-`clients/c042/log/2026/2026-10-21T143205Z-alice-k3f9.md`
+`clients/c042/log/2026/10/2026-10-21T143205Z-alice-k3f9.md`
 (`Tiroir-Op: log-append`).
 
 ## Error cases

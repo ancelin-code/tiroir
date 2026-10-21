@@ -55,7 +55,7 @@ Result without elicitation, team store:
 {"applied": false,
  "proposal": {"id": "p-7k2d", "kind": "log-append",
               "store": {"name": "cabinet-exemple", "audience": "team"},
-              "paths": ["clients/c042/log/2026/2026-10-21T143205Z-alice-k3f9.md"],
+              "paths": ["clients/c042/log/2026/10/2026-10-21T143205Z-alice-k3f9.md"],
               "diff": "+Relance TVA préparée, envoi prévu le 22/10.\n",
               "status": "pending"}}
 ```

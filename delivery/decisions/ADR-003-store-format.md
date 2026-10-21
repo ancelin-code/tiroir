@@ -32,7 +32,7 @@ choices behind them.
   - `summary.md`: YAML frontmatter for the metadata fields, then a body whose
     level-2 headings are exactly the sections the schema declares, in order.
     A section is the unit of merge (Y4b) and of injection (C4).
-  - `log/<yyyy>/<timestamp>-<author>-<random>.md`: **one file per log entry**,
+  - `log/<yyyy>/<mm>/<timestamp>-<author>-<random>.md`: **one file per log entry**,
     with `date` and `author` in its frontmatter. Concurrent appends create
     different files and never conflict.
 - **Shared space:** Markdown documents under `shared/`. Level-2 headings are
@@ -73,8 +73,9 @@ choices behind them.
 ## Consequences
 
 A drawer with 2,000 log entries is 2,000 small files; Git and file systems
-handle this, and year folders keep directories short. Reading a whole log
-means reading many files, which only the indexer and the "read log" operation
+handle this, and year and month folders keep each directory to a few
+hundred files, under the 1,000 entries Git hosts' web views list. Reading a
+whole log means reading many files, which only the indexer and the "read log" operation
 do. Editing a log by hand means editing one entry file, which Y10 then
 rejects. Section headings become structural: renaming a section is a migration.
 Users who open the files meet one syntax, YAML. Comments added by hand to
