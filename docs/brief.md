@@ -174,3 +174,10 @@ Real deployments keep their stores (data and configuration) in their own private
 - Session capture stays out of scope; it is left to other tools.
 - Licence: Apache-2.0.
 - Runtime: Python is preferred, to be confirmed by a decision record.
+- Access control is per store, not per drawer: a machine uses several stores
+  (for example company-wide, leadership, personal), each with a `personal` or
+  `team` audience. Every write to a team store is shown with its audience and
+  confirmed; writes default to the personal store.
+- A single log entry can be purged, not only a whole drawer.
+- Nothing is loaded at session start; a memory skill generated from the schema
+  tells the agent when to use tiroir.
