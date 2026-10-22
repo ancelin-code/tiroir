@@ -3,7 +3,7 @@
 **Status:** approved
 **Approved by:** Ancelin Serre, 2026-10-22 (revises the local-first version
 approved on 2026-10-21: v1 is a self-hosted server; amended the same day:
-OAuth client metadata fetching added to the network invariant)
+OAuth client metadata fetching added to the network invariant, and W7)
 
 ## Problem
 
@@ -262,6 +262,14 @@ built after the Must set and may slip to a later release.
   confirmation.
 - **W6.** A member with read-only access to a store cannot write to it; the
   refusal says so.
+- **W7.** The agent records what is worth remembering without being asked:
+  the memory skill (C5c) tells it when to append a log entry and when to
+  propose a summary update. Acceptance: on a scripted set of at least ten
+  conversations about a client of the synthetic accounting store in which a
+  new fact is established (a decision, a deadline, a document received), the
+  agent appends a log entry or proposes a summary update for that client in at
+  least eight; on at least five conversations that establish nothing new, it
+  writes nothing.
 
 ### Erasure (Must)
 
