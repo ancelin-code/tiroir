@@ -19,8 +19,14 @@ target became a server.
 ## Decision
 
 - **Language:** Python 3.13, one package `tiroir` with sub-packages (layout
-  and dependency rule in ADR-013). Dependencies and their versions are locked
-  with `uv` (`pyproject.toml` and `uv.lock`).
+  and dependency rule in ADR-013).
+- **Project tooling:**
+  - `mise` pins the tool versions (Python, `uv`) in `mise.toml` and defines
+    the project's tasks (`lint`, `typecheck`, `test`, `bench`, `image`), so a
+    developer, a lane and CI run the same commands with the same versions;
+  - `uv` manages the virtual environment and the dependencies, locked in
+    `pyproject.toml` and `uv.lock`; the image installs from the lock file with
+    `uv sync --frozen`.
 - **Main dependencies:**
   - the official MCP Python SDK (`mcp`): streamable HTTP transport,
     elicitation, authorization-server support (ADR-015);
@@ -55,7 +61,8 @@ target became a server.
   - **Escape hatch:** a hot path that a benchmark shows to break a budget may
     be rewritten as a native extension, in Rust through PyO3, behind the same
     Python interface. Never by default, only on a measurement.
-- **Development:** `ruff` (lint and format), `mypy --strict` on `tiroir.core`,
+- **Development:** `ruff` (lint and format), `pyrefly` for type checking with
+  `preset = "strict"` on the whole package (configured in `pyproject.toml`),
   `pytest` with `hypothesis` for the property tests (X3, Y4g), `import-linter`
   for the dependency rule (ADR-013), `pip-audit` and a licence check of the
   locked dependencies (ADR-001). CI runs on Linux; the adapter checks of D1
@@ -79,6 +86,12 @@ target became a server.
   authorization-server library exists.
 - **TypeScript on Node** - the reference MCP SDK, but weaker local inference,
   stemming and Git libraries than Python.
+- **`mypy` for type checking** - the reference checker, but much slower on a
+  whole project; `pyrefly` checks the package in seconds, so it runs on every
+  save and every lane, and its strict preset covers the same ground.
+- **`uv` alone, without `mise`** - `uv` can pin Python too, but not other
+  tools or tasks; `mise` gives one entry point for every command lanes and CI
+  run.
 
 ## Consequences
 
