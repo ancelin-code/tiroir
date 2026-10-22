@@ -1,6 +1,6 @@
 # ADR-005: Index each store in one SQLite file beside its repository, built from its commits
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-21, revised 2026-10-22 for the server
 
 ## Context

@@ -1,6 +1,6 @@
 # ADR-002: Build the server in Python and ship it as a container image, under explicit lightness rules
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

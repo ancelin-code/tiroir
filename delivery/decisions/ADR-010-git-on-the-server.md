@@ -1,6 +1,6 @@
 # ADR-010: Keep each store as a bare Git repository on the server, written by tiroir alone, cloned read-only and copied to mirrors
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

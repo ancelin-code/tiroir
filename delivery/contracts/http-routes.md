@@ -1,6 +1,6 @@
 # Contract: HTTP routes of the server
 
-**Status:** draft
+**Status:** agreed
 **Parties:** `tiroir.server` (provider: MCP, OAuth, account and administration
 pages, Git, health); the Claude hosts and the Claude Code plugin, the member
 CLI, Git clients, the deployment stack (Caddy, health checks) (consumers).

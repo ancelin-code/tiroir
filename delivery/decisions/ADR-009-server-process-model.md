@@ -1,6 +1,6 @@
 # ADR-009: Run one server process holding the model once, with background workers, and serve the prompt hook as an MCP tool call
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

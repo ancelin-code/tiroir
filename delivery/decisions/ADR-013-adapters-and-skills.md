@@ -1,6 +1,6 @@
 # ADR-013: Keep host specifics in adapters around a host-neutral core, ship a generic Claude Code plugin, and generate the memory skill per member
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

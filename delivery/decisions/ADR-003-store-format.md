@@ -1,6 +1,6 @@
 # ADR-003: Store a drawer as a summary file plus one file per log entry, configured by `tiroir.yaml`
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-21, revised 2026-10-22 for the server
 
 ## Context

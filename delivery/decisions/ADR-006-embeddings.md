@@ -1,6 +1,6 @@
 # ADR-006: Embed on the server with ONNX Runtime, choose the default model by evaluation, and allow an OpenAI-compatible external service per store
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

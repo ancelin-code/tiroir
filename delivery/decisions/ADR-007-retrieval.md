@@ -1,6 +1,6 @@
 # ADR-007: Chunk by section and entry, fuse lexical and vector ranks, and abstain on per-channel floors
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-21
 
 ## Context

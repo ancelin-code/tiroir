@@ -1,6 +1,6 @@
 # ADR-011: Purge by rewriting the store's history on the server, masking links, recording salted digests, and force-pushing mirrors
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

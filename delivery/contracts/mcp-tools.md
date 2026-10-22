@@ -1,6 +1,6 @@
 # Contract: MCP tools
 
-**Status:** draft
+**Status:** agreed
 **Parties:** `tiroir.server` (provider, on the MCP Python SDK); the memory and
 init skills, the Claude Code plugin and its prompt hook
 (`claude-code-hook.md`), the member CLI, the C7 acceptance script

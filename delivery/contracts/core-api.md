@@ -1,6 +1,6 @@
 # Contract: core API
 
-**Status:** draft
+**Status:** agreed
 **Parties:** `tiroir.core` (provider); `tiroir.server` (MCP tools, account and
 administration pages, Git endpoint), `tiroir.cli` (administration CLI),
 `tiroir.adapters.*`, the evaluation harness (consumers).

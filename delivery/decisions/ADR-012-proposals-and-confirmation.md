@@ -1,6 +1,6 @@
 # ADR-012: Route every confirmed change through a proposal held by the server for its member, confirmed by MCP elicitation when the host supports it
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context
