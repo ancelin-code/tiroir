@@ -519,8 +519,7 @@ None at this stage.
 
 ## Sources
 
-- `docs/brief.md` — product brief (its §9 already described the server mode;
-  the brief is not yet updated for this revision).
+- `docs/brief.md` — product brief, updated for this revision.
 - `docs/research/prior-art.md` — review of agentcairn, Cairn, agent-memory-kit,
   Basic Memory, claude-mem, agentmemory and the Agent Memory Repo format.
 - Decisions of the project owner, 2026-10-21: self-hosted server first, no
