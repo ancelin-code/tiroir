@@ -5,7 +5,7 @@
       "source": "ancelin-code/delivery-kit",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-decompose/SKILL.md",
-      "computedHash": "9603a9e5b29dd973ebba95c10cda07d3508ab76d26e0afaac078e1195c526cac"
+      "computedHash": "66c175fb51441d84b0bca9966630353d08196c2a753d0dbb61b6b28791ce741c"
     },
     "delivery-implement": {
       "source": "ancelin-code/delivery-kit",
@@ -17,19 +17,19 @@
       "source": "ancelin-code/delivery-kit",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-orchestrator/SKILL.md",
-      "computedHash": "7f00dee72a31a2fb6246211d09f5110359349428010b88dc378eba463508af67"
+      "computedHash": "6f1cace9384e39509506cfb098717b8441a1c528ac472dfc2ab1e11176dac71b"
     },
     "delivery-spec": {
       "source": "ancelin-code/delivery-kit",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-spec/SKILL.md",
-      "computedHash": "23466a88a648bade5a6a586e7b863e03c0de4ad073720446d09d1fc9825bbfca"
+      "computedHash": "8e345269753d15552d824fdc6bcdd55626398ca527c92ad8457c74ad73817dce"
     },
     "delivery-status": {
       "source": "ancelin-code/delivery-kit",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-status/SKILL.md",
-      "computedHash": "4bbc25f6507e806a5c200d67cabc33d9a9dddf33f6334fd83d457e9a0c7b9ff6"
+      "computedHash": "f41b62f67b6557e14ed1f09b49977ab4caffb46ced0756409bfd9f11bbdbc10f"
     }
   }
 }
