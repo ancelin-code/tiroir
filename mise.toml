@@ -1,0 +1,40 @@
+[tools]
+python = "3.13"
+uv = "latest"
+
+[tasks.sync]
+description = "Install the locked dependencies"
+run = "uv sync --frozen"
+
+[tasks.lint]
+description = "Lint, check formatting and the dependency rule"
+depends = ["sync"]
+run = [
+  "uv run ruff check .",
+  "uv run ruff format --check .",
+  "uv run lint-imports",
+]
+
+[tasks.format]
+description = "Format the code"
+depends = ["sync"]
+run = ["uv run ruff check --fix .", "uv run ruff format ."]
+
+[tasks.typecheck]
+description = "Type-check the package"
+depends = ["sync"]
+run = "uv run pyrefly check"
+
+[tasks.test]
+description = "Run the tests"
+depends = ["sync"]
+run = "uv run pytest"
+
+[tasks.check]
+description = "Run every check"
+depends = ["lint", "typecheck", "test"]
+
+[tasks.serve]
+description = "Run the server"
+depends = ["sync"]
+run = "uv run tiroir admin serve"
