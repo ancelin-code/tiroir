@@ -1,9 +1,8 @@
 # tiroir — Requirements
 
-**Status:** draft
-**Approved by:** — (revision of the version approved by Ancelin Serre on
-2026-10-21: v1 moves from local-first to a self-hosted server, decided by the
-project owner the same day)
+**Status:** approved
+**Approved by:** Ancelin Serre, 2026-10-22 (revises the local-first version
+approved on 2026-10-21: v1 is a self-hosted server)
 
 ## Problem
 
