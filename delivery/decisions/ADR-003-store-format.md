@@ -1,7 +1,7 @@
 # ADR-003: Store a drawer as a summary file plus one file per log entry, configured by `tiroir.yaml`
 
 **Status:** proposed
-**Date:** 2026-10-21
+**Date:** 2026-10-21, revised 2026-10-22 for the server
 
 ## Context
 
@@ -15,18 +15,18 @@ choices behind them.
 
 ## Decision
 
-- **One syntax, YAML 1.2,** for every structured file: the schema, the
-  frontmatter, the machine configuration (ADR-004) and the purge records
-  (ADR-011). Frontmatter has to be YAML, the format Obsidian and other
-  Markdown tools read, so using it everywhere leaves users one syntax to learn.
-  tiroir parses with a YAML 1.2 parser (`saphyr`), refuses anchors, aliases,
-  tags and multi-document files, and writes every file itself in one canonical
-  form (fixed key order, explicit quoting), so its output is stable across
-  machines and versions.
+- **One syntax, YAML 1.2,** for every structured file in a store: the schema,
+  the frontmatter, the purge records (ADR-011) and the drawer moves
+  (ADR-014). Frontmatter has to be YAML, the format Obsidian and other
+  Markdown tools read, so using it everywhere leaves readers one syntax.
+  tiroir parses with `ruamel.yaml` in YAML 1.2 safe mode, refuses anchors,
+  aliases, tags and multi-document files, and writes every file itself in one
+  canonical form (fixed key order, explicit quoting), so its output is stable
+  across versions.
 - **Schema file:** `tiroir.yaml` at the store root. It holds the store's
-  identity (id, name, audience, language) and the drawer types. A migration
-  rewrites it in canonical form; comments are not preserved, so explanations
-  go in the schema's `description` fields, which are data.
+  identity (id, name, audience, language) and the drawer types. Only tiroir
+  writes it (init and migrations), in canonical form; explanations go in the
+  schema's `description` fields, which are data.
 - **Drawer:** a folder whose path comes from the drawer type's layout pattern
   (for example `clients/{code}`, slugified), holding:
   - `summary.md`: YAML frontmatter for the metadata fields, then a body whose
@@ -43,30 +43,29 @@ choices behind them.
   Repo format: what the store is, its layout, and links to every drawer. It is
   **derived**: tiroir regenerates it after every change and never merges it.
 - **tiroir's own state in the store:** `.tiroir/` (purge records, ADR-011;
-  drawer moves, ADR-014).
-  Nothing machine-specific is ever written to the store.
+  drawer moves, ADR-014). Nothing about the server, its members or their
+  access is ever written to the store (ADR-004).
 - **Identifiers:** a drawer's identifier is its folder path relative to the
   store root (`clients/c042`). Path segments are lowercase ASCII slugs, so
   they behave the same on case-insensitive file systems (macOS, Windows).
 
 ## Alternatives considered
 
-- **One log file per drawer, appended to** - simplest to read, but two
-  machines appending concurrently edit the same file. A union merge driver
-  interleaves multi-line entries and is not available without Git's own merge
-  machinery.
-- **One log file per drawer per day or per author** - fewer files, but still
-  conflicts within a day or across an author's machines.
+- **One log file per drawer, appended to** - simplest to read, but every
+  append rewrites a growing file, a purge of one entry rewrites the whole log,
+  and a clone or mirror diff shows the whole file changing. Writes are
+  serialised on the server (ADR-010), so conflicts are no longer the reason;
+  immutability of each entry (W1) and single-entry purge (E3) are.
+- **One log file per drawer per day or per author** - fewer files, but entries
+  stop being immutable files, with the same purge cost.
 - **Metadata in a separate YAML file** - cleaner for tools, but splits one
   record across two files a non-developer must keep in sync; frontmatter is
   what Obsidian and every other Markdown tool already understand.
-- **TOML for the schema and configuration files** - `toml_edit` rewrites a
-  file keeping its comments and layout, which the Rust ecosystem offers for
-  no YAML library. Rejected: the schema is written by the init skill, presets
-  and migrations, not by hand, so no use for those comments was found; the
-  `description` fields carry the explanations instead. Two syntaxes in one
-  store cost every reader more than the lost comments. YAML's indentation
-  errors are caught because unknown keys and wrong types are errors.
+- **TOML for the schema** - its editing libraries keep comments across
+  rewrites. Rejected: the schema is written only by tiroir (init, presets,
+  migrations), so there are no hand-written comments to keep, and two syntaxes
+  in one store cost every reader. YAML's indentation errors are caught because
+  unknown keys and wrong types are errors.
 - **JSON Schema for metadata** - expressive, but far beyond the field types S2
   requires and unreadable for the init skill's audience.
 
@@ -75,9 +74,6 @@ choices behind them.
 A drawer with 2,000 log entries is 2,000 small files; Git and file systems
 handle this, and year and month folders keep each directory to a few
 hundred files, under the 1,000 entries Git hosts' web views list. Reading a
-whole log means reading many files, which only the indexer and the "read log" operation
-do. Editing a log by hand means editing one entry file, which Y10 then
-rejects. Section headings become structural: renaming a section is a migration.
-Users who open the files meet one syntax, YAML. Comments added by hand to
-`tiroir.yaml` disappear at the next migration; the dry run (I4) shows the
-rewritten schema among the modified files, so this is never silent.
+whole log means reading many files, which only the indexer and the "read
+log" operation do. Section headings become structural: renaming a section is a
+migration. People who open a clone or a mirror meet one syntax, YAML.

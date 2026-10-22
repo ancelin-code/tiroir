@@ -19,7 +19,7 @@ so they are fixed once.
   drawer type, kind, section, date and metadata for filtering.
 - **Text normalisation**, applied identically to indexed text and queries:
   Unicode NFKC, case folding, diacritics removed, the store language's stop
-  words dropped, Snowball stemming for that language (`rust-stemmers`). Stored in
+  words dropped, Snowball stemming for that language (`PyStemmer`). Stored in
   the FTS5 `text` column with the `unicode61` tokenizer.
 - **Identifier tokens:** tokens containing a digit, and runs of digits split
   by spaces, dots or dashes (`123 456 789`, `2026-001`), are also stored

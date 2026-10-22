@@ -1,46 +1,48 @@
-# ADR-005: Index each store in one SQLite file outside the store, built from the committed state
+# ADR-005: Index each store in one SQLite file beside its repository, built from its commits
 
 **Status:** proposed
-**Date:** 2026-10-21
+**Date:** 2026-10-21, revised 2026-10-22 for the server
 
 ## Context
 
 Search needs full-text and vector retrieval with metadata filters (R1), an
 index that is derived and rebuildable (R7), and that serves only content the
-user has confirmed (Y9). Three kinds of process read it concurrently: the MCP
-server, the per-prompt hook and the CLI (ADR-009). The prior-art review found
+user has confirmed. The server process reads it for every member, and the
+administration CLI may read it too (ADR-009). The prior-art review found
 brute-force vector search fast enough below about 50,000 chunks.
 
 ## Decision
 
-- **Engine:** SQLite, bundled into the binary by `rusqlite` with FTS5.
+- **Engine:** SQLite through Python's `sqlite3`, with FTS5; the image's SQLite
+  build is checked for FTS5 at start and in CI.
   - Full text: an FTS5 table with two columns, one with language-normalised
     and stemmed tokens and one with raw identifier tokens (ADR-007).
   - Vectors: float32 arrays stored as BLOBs, one row per chunk and model,
-    loaded into memory and searched by brute-force dot product in the reading
-    process.
+    loaded once into the server process as NumPy arrays, per store and
+    model, and searched by brute-force dot product.
   - Metadata, files, chunks, the detection names table (ADR-008) and the
     links table (ADR-014) are plain tables in the same file.
-- **Location:** one file per store in the data directory
-  (`<data>/stores/<store-id>/index.sqlite`), never inside the store.
-- **Source:** the index reflects the tree of the store's last commit, not the
-  working copy. Outside edits (Y9) are invisible to search until confirmed and
-  committed.
-- **Freshness:** every process, before reading, compares the commit recorded
-  in the index with the store's current commit and re-indexes the files that
-  changed between them. Text, metadata and names are updated immediately;
-  embeddings are computed only by processes that have the model loaded (MCP
-  server, CLI). Until then, the new chunks are found by lexical search only.
-- **Concurrency:** WAL mode; readers never block; one writer at a time per
-  store, serialised by the store lock (ADR-010).
-- **Rebuild:** deleting the file and running `tiroir index --rebuild` produces
-  the same results (R7). The file records the schema hash and the embedding
+- **Location:** one file per store in the data directory,
+  `<data>/index/<store-id>.sqlite`, never inside the store's repository
+  (ADR-004).
+- **Source:** the index reflects the tree of `main`'s head (ADR-010); there is
+  no working copy.
+- **Freshness:** the indexer (ADR-009) runs after every commit and at start: it
+  compares the commit recorded in the index with the head and re-indexes the
+  files that changed between them. Text, metadata, names and links are updated
+  at once, so a write is visible to lexical search immediately (W4, P3);
+  embeddings follow in the background, and until they land the new chunks are
+  found by lexical search only.
+- **Concurrency:** WAL mode; readers never block; the indexer is the only
+  writer of a store's index.
+- **Rebuild:** deleting the file and running `tiroir admin index --rebuild`
+  produces the same results (R7). The file records the schema hash and the embedding
   model; a mismatch triggers a rebuild of the affected parts.
 
 ## Alternatives considered
 
-- **SQLite with the sqlite-vec extension** - vector search in SQL, and easy
-  to link statically in Rust, but one more C dependency for no measurable gain
+- **SQLite with the sqlite-vec extension** - vector search in SQL, loadable
+  from Python, but one more native dependency for no measurable gain
   at our size. Can replace the in-memory scan later behind the same index
   interface.
 - **DuckDB (agentcairn's choice)** - good analytics engine, but a larger
@@ -52,13 +54,16 @@ brute-force vector search fast enough below about 50,000 chunks.
   and one more native dependency.
 - **LanceDB or Chroma** - vector-first databases; heavy, and opaque compared
   with one SQLite file a user can inspect.
-- **Indexing the working copy** - simpler, but would serve unconfirmed outside
-  edits, against Y9.
+- **PostgreSQL with pgvector** - one database for the server state and every
+  index, suited to a later hosted offering, but a second service to run and
+  back up (ADR-004), for indexes that are derived and rebuildable.
 
 ## Consequences
 
-A process holds every vector of the stores in use in memory while searching:
-about 15 MB per 10,000 chunks at 384 dimensions, within P4. Past roughly
-50,000 chunks per store the scan nears the P2 budget, the point at which
-sqlite-vec or an ANN index is reconsidered. Embeddings lag behind commits
-until an MCP server or CLI process runs, which `doctor` reports.
+The server holds every store's vectors in memory: about 1.5 KB per chunk at
+384 dimensions and 4 KB at 1,024, so P6's store (about 62,000 chunks) takes
+from 95 MB to 250 MB depending on the model chosen by ADR-006, counted against
+P4. A NumPy scan of that many vectors takes milliseconds; sqlite-vec or an
+approximate index is reconsidered only if the P2 or P4 benchmark says so.
+Embeddings lag behind commits by the indexer's queue, which the
+administration page and `doctor` report.

@@ -31,8 +31,8 @@ itself sensitive data.
 - **Writes check explicit links:** a write whose text holds an explicit link
   that resolves to no file of the same store is refused with
   `link.unresolved`, naming the link. A log entry can never be corrected
-  later, so a broken link must not get in. Links broken by outside edits are
-  reported by `doctor`.
+  later, so a broken link must not get in. `doctor` reports any broken link
+  that remains, for example after a restore from an older backup.
 - **Same store only.** A link resolves in its own store; a reference to another
   store is plain text. Stores have different members (M1), so a cross-store
   link would show one store's names to people without access to the other.
@@ -40,10 +40,10 @@ itself sensitive data.
   kind, raw target, resolved target (empty when unresolved) and, for
   mentions, the text that matched. Derived and rebuilt with the rest (R7).
   Explicit links and mentions are updated with the file's text by any process
-  (ADR-009). When the names table changes (a drawer created, an alias added),
-  the MCP server or CLI re-runs the matcher over every chunk; the hook does
-  not, since it never reads links.
-- **Reading links:** `tiroir_read` with `what: links` (and `Workspace::links`,
+  by the indexer (ADR-009). When the names table changes (a drawer created,
+  an alias added), the indexer re-runs the matcher over every chunk of the
+  store in the background.
+- **Reading links:** `tiroir_read` with `what: links` (and `Core.links`,
   `tiroir links`) returns a file's or a drawer's outgoing and incoming links,
   each with its kind and matched text, never the other end's content. In a
   scoped request, only links whose other end lies in the active drawers or the
@@ -92,5 +92,5 @@ After a move, links in old log entries no longer open in Obsidian, though
 tiroir still resolves them. Mentions are only as good as the declared names:
 a weak name (ADR-008) produces noisy mentions, which `doctor` already flags.
 Re-matching every chunk when names change costs a few seconds at the P6
-scale and runs outside the hook. A graph view can later be drawn from the
+scale and runs in the background. A graph view can later be drawn from the
 `links` table without any format change.

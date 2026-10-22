@@ -21,8 +21,8 @@ keys (`store.name` is `name` under the `store` mapping).
 
 tiroir writes this file in one canonical form, like frontmatter: mappings in
 block style with keys in the order of the tables below, lists of scalars in
-flow style, strings double-quoted when they need quoting. A migration rewrites
-the whole file in that form, so comments in it are not kept; explanations
+flow style, strings double-quoted when they need quoting. Only tiroir writes
+the file (init and migrations), always whole and in that form; explanations
 belong in the `description` fields, which are data and survive migrations.
 
 ### Top level
@@ -30,7 +30,7 @@ belong in the `description` fields, which are data and survive migrations.
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `tiroir` | integer | yes | Format version of this file. `1` for v1. |
-| `store.id` | string (UUID) | yes | Generated at creation, never changed. Keys all machine-side data (ADR-004). |
+| `store.id` | string (UUID) | yes | Generated at creation, never changed. Keys all server-side data of the store (ADR-004). |
 | `store.name` | slug | yes | Short name shown in results and confirmations (M3), for example `acme`. |
 | `store.audience` | `personal` \| `team` | yes | Who reads the store (M2). `team` makes every write need confirmation (W5). |
 | `store.language` | language code | yes | Memory language, ISO 639-1 (`en`, `fr`). Drives templates' language, the agent's writing language, stop words and stemming (S3, ADR-007). |
@@ -54,7 +54,7 @@ belong in the `description` fields, which are data and survive migrations.
 | `summary.sections` | list of string | yes | Level-2 section headings, in order. At least one. The units of merge (Y4b) and injection (C4). |
 | `log.template` | path | no | Markdown body template of a new log entry. Default: empty body. |
 | `detect.names` | list of field names | no | Fields whose values name a drawer in text (C1, ADR-008). Fields must be `text` or `list`. |
-| `detect.cwd` | field name | no | Field compared to the working directory's repository folder name or `origin` URL (C1a). |
+| `detect.cwd` | field name | no | Field whose slugified value is compared to each folder name of the working directory path sent by the host; the deepest match wins (C1a, ADR-008). |
 | `inject.sections` | list of string | no | Sections injected when a drawer is detected (C4). Default: all. Each must be in `summary.sections`. |
 | `inject.max_tokens` | integer | no | Cap on one drawer's injected block. Default 800. Truncation keeps whole sections in declared order, then cuts the last one. |
 

@@ -2,7 +2,8 @@
 
 **Status:** approved
 **Approved by:** Ancelin Serre, 2026-10-22 (revises the local-first version
-approved on 2026-10-21: v1 is a self-hosted server)
+approved on 2026-10-21: v1 is a self-hosted server; amended the same day:
+OAuth client metadata fetching added to the network invariant)
 
 ## Problem
 
@@ -439,7 +440,9 @@ These hold for every task and every release.
 - The server sends nothing outside the machine it runs on except: to
   configured mirrors; a store's content to the external embedding service
   selected for that store (R4); the one-time download of models from a
-  documented source; and certificate issuance. No telemetry.
+  documented source; certificate issuance; and fetching the public metadata
+  document of an OAuth client connecting to the server (ADR-015). No
+  telemetry.
 - Scoped reads never cross drawers or stores (X1), and a member never reaches
   a store they were not granted (X1a).
 - Log entries are never modified, and only a purge removes them (W1, E4); a

@@ -23,12 +23,13 @@ leak into the conversation.
   token n-grams built from the names table of the index (ADR-005); the longest
   match wins when matches overlap.
 - **Ambiguity:** a matched name mapping to more than one drawer, across all
-  stores in use, is reported as ambiguous with the candidate drawers, and
+  stores the member is granted, is reported as ambiguous with the candidate drawers, and
   nothing is injected for it (C2).
 - **Working directory (C1a):** a drawer type may name a field under
-  `detect.cwd`; the drawer whose field value equals the folder name of the
-  working directory's repository root, or its `origin` remote URL, is
-  detected.
+  `detect.cwd`; the drawer whose field value, slugified, equals the slug of
+  one of the folder names in the working directory path the host sends is
+  detected, the deepest folder winning. The server sees only that path, never
+  the member's files or Git remotes.
 - **Weak names:** `doctor` warns about names shorter than three characters,
   made only of digits shorter than five, or equal to a stop word of the store
   language; they are still matched, the user decides.
@@ -37,7 +38,7 @@ leak into the conversation.
 ## Alternatives considered
 
 - **Embedding similarity between prompt and drawers** - needs the model in the
-  hook (over a second per process, ADR-009) and guesses by construction,
+  hook's path and its 300 ms budget, and guesses by construction,
   against C3.
 - **Fuzzy matching (edit distance)** - catches typos but turns `Durand` into
   `Durant`, a different client; a wrong injection costs more than a missed one.

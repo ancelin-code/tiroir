@@ -1,14 +1,14 @@
 # Contract: store layout and commit format
 
 **Status:** draft
-**Parties:** core (store reading and writing, index, sync, purge, migration),
-presets and their synthetic datasets, evaluation datasets, anyone reading a
-store without tiroir (S5).
+**Parties:** core (store reading and writing, index, history, purge,
+migration), presets and their synthetic datasets, evaluation datasets, anyone
+reading a clone or mirror of a store without tiroir (S5).
 
 ## Purpose
 
 Fixes the files a store contains and the shape of each, and the commit
-format sync replays (ADR-003, ADR-010, ADR-011). Every writer produces exactly
+format every tiroir commit carries (ADR-003, ADR-010, ADR-011). Every writer produces exactly
 these shapes; every reader accepts them.
 
 ## Shape
@@ -89,7 +89,8 @@ Relance envoyée pour les justificatifs de frais manquants.
 
 Frontmatter fields `date` (ISO 8601 UTC) and `author` (handle) are required;
 others are not allowed in v1. The body follows the type's log template. An
-entry file is never modified after its commit (W1, Y10).
+entry file is never modified after its commit (W1), except by a purge masking
+a link (E5).
 
 ### Shared documents
 
@@ -150,16 +151,16 @@ tiroir: log-append clients/c042
 Tiroir-Op: log-append
 Tiroir-Drawer: clients/c042
 Tiroir-Author: alice
-Tiroir-Machine: 6f1d0c2e
+Tiroir-Via: mcp
 ```
 
 | Trailer | Required | Meaning |
 |---|---|---|
-| `Tiroir-Op` | yes | One of `store-init`, `log-append`, `summary-update`, `doc-update`, `doc-create`, `drawer-create`, `outside-edit`, `migration`, `purge`. |
+| `Tiroir-Op` | yes | One of `store-init`, `log-append`, `summary-update`, `doc-update`, `doc-create`, `drawer-create`, `migration`, `purge`, `upgrade`. |
 | `Tiroir-Drawer` | when the operation targets a drawer | Drawer id. |
-| `Tiroir-Author` | yes | Author handle (Y4f). |
-| `Tiroir-Machine` | yes | First 8 hex characters of the machine id (data directory), to tell machines apart. |
-| `Tiroir-Base` | for `summary-update`, `doc-update`, `outside-edit` | `<path>@<blob id>` of each changed file's base version, one trailer per file. |
+| `Tiroir-Author` | yes | Author handle (Y4f); `tiroir` for `upgrade` commits, a handle no member can take. |
+| `Tiroir-Via` | yes | The surface that made the change: `mcp`, `cli`, `admin` or `upgrade` (ADR-016). |
+| `Tiroir-Base` | for `summary-update`, `doc-update` | `<path>@<blob id>` of each changed file's base version, one trailer per file. |
 | `Tiroir-Schema` | for `migration` | Format version and hash of the resulting schema. |
 
 The subject line is `tiroir: <op> <drawer id or "shared" or "store">`. No
@@ -180,9 +181,9 @@ adds `clients/c042/summary.md` and regenerates `MEMORY.md`
 | Condition | Result |
 |---|---|
 | Summary sections missing, extra or out of order | `summary.invalid-sections`; reported by `doctor`; a proposal touching it is refused until fixed by a proposal |
-| Log entry with an unknown or missing frontmatter field, or modified after commit | `log.invalid` / `log.modified` (Y10); restoring the committed version is offered |
+| Log entry with an unknown or missing frontmatter field, or a write that would modify a committed entry | `log.invalid` / `log.modified`; nothing is written |
 | Two drawers resolve to the same folder | `drawer.path-collision` at creation; nothing is written |
-| Commit without the required trailers on the store branch | treated as an outside change: sync stops and reports (ADR-010) |
+| Commit without the required trailers on `main` | `store.foreign-change`: the store is read-only until the administrator resolves it (ADR-010) |
 
 ## Changing this contract
 

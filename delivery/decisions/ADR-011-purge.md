@@ -1,76 +1,71 @@
-# ADR-011: Purge by rewriting history, recording an epoch, and refusing stale content on every clone
+# ADR-011: Purge by rewriting the store's history on the server, masking links, recording salted digests, and force-pushing mirrors
 
 **Status:** proposed
-**Date:** 2026-10-21
+**Date:** 2026-10-22
 
 ## Context
 
-A drawer, a log entry or a shared document must be removable from the working
-copy, the index and the whole history, locally and on the remote (E1, E3), and
-no other clone may bring it back (E2, Y4e). Git history is immutable by
-design: removal means rewriting every commit since the content appeared, and
-every clone must learn that the rewrite happened.
+A drawer, a log entry or a shared document must be removable from the store's
+repository and its whole history, from the index, and from every configured
+mirror (E1, E3); explicit links to it must be masked everywhere (E5); no write
+may reintroduce it (E2, Y4e). Every write goes through the server, which holds
+the only writable copy of each store (ADR-010).
 
 ## Decision
 
-- **Preconditions:** the store is synced, nothing is queued locally, and the
-  store lock is held.
+- **Preconditions:** the store's write lock is held for the whole purge;
+  writes arriving meanwhile wait or are refused with `store.busy` (Y4d's
+  rule).
 - **Dry run:** lists the files removed, the files whose links to purged
   content are masked, the files that mention the purged drawer's names in
-  plain text (left unchanged), and the number of commits rewritten or
-  dropped. The purge itself needs a confirmation naming the drawer or entry
-  (E1), through the proposal mechanism (ADR-012).
-- **Rewrite:** tiroir walks the branch from its root with libgit2 (ADR-010)
-  and rebuilds each commit: the purged paths are removed from its tree; in
-  the remaining files, every explicit link to a purged path becomes the text
-  `[purged]` and the moves involving purged paths leave `.tiroir/moves.yaml`
-  (ADR-014); commits left empty are dropped; authors and dates are kept; and
-  the message of every commit whose trailers reference a purged drawer
-  becomes `tiroir: purged`. libgit2 has no `filter-branch`, so this is tiroir code,
-  covered by the same multi-clone tests as sync.
+  plain text (left unchanged), the number of commits rewritten or dropped,
+  and the mirrors that will be force-pushed. The purge itself needs a
+  confirmation naming the drawer or entry (E1), through a proposal (ADR-012).
+- **Rewrite:** `git filter-repo` on the bare repository (ADR-010), with a
+  tiroir callback that: removes the purged paths from every commit; replaces
+  every explicit link to a purged path with the text `[purged]` in the
+  remaining files (ADR-014); removes the moves involving purged paths from
+  `.tiroir/moves.yaml`; and replaces the message of every commit whose
+  trailers reference a purged drawer with `tiroir: purged`. Commits left
+  empty are dropped; authors and dates are kept.
 - **Purge record:** the rewritten head gets one more commit adding an entry to
-  `.tiroir/purges.yaml`: the next epoch number, the date, the author, a SHA-256
-  digest of each purged path salted with the store id, and the Git blob ids of
-  the purged files and of the previous versions of the files whose links were
-  masked. Paths and content never appear in the record.
-- **Publication:** force-push, only if the remote head is still the one the
-  rewrite started from; otherwise abandon the rewrite and start over.
-- **Local cleanup:** libgit2 has no garbage collection, so tiroir repacks the
-  reachable objects into a new pack with libgit2's pack builder, deletes the
-  old packs and the unreachable loose objects, and clears the reflogs. It also
-  deletes the index rows and any pending proposal touching the purged paths. A
-  test asserts that the purged blobs no longer exist in the local object
-  store.
-- **Other clones:** when a fetch finds a remote head that does not descend from
-  the last known one and a higher epoch in `purges.yaml`, tiroir resets to the
-  remote, deletes the unreachable objects, and replays the queued local
-  operations (ADR-010) except those based on a pre-purge commit that touch a
-  purged path, which are refused and reported (Y4e).
-- **Push guard:** tiroir refuses to push any commit containing a blob listed
-  in `purges.yaml` (E2). A new drawer created after the purge under the same
-  path is allowed: it is new content, and refusing it would block a returning
-  client forever.
+  `.tiroir/purges.yaml`: the next epoch number, the date, the author, a
+  SHA-256 digest of each purged path salted with the store id, and the Git blob
+  ids of the purged files and of the previous versions of the files whose
+  links were masked. Paths and content never appear in the record.
+- **Refusing reintroduction:** every write checks its target paths against the
+  record's digests, and the blob of each file it writes against the record's
+  blob ids (E2, Y4e). A new drawer created after the purge under the same path
+  is allowed: it is new content.
+- **Clean-up:** reflogs expired and `git gc --prune=now`, so the purged objects
+  no longer exist on the server; a test asserts it. The index rows and every
+  pending proposal touching the purged paths are deleted.
+- **Mirrors:** the mirror pusher force-pushes the rewritten `main` to each
+  mirror at once. A mirror that refuses (protected branch, unreachable) is
+  listed on the administration page as holding purged content until a later
+  push succeeds (E2).
 
 ## Alternatives considered
 
-- **Delete in a new commit only** - removes the file from the current state but
-  leaves it in every past commit; fails E1.
+- **Delete in a new commit only** - leaves the content in every past commit;
+  fails E1.
+- **tiroir's own history rewriter on libgit2** (the local-first design, which
+  had no `filter-repo`) - more code to get right; `git filter-repo` is the
+  reference tool, is in the image, and accepts a callback for the link masking.
 - **Encrypt each drawer and destroy the key to purge** (crypto-shredding) -
-  avoids rewriting history, but makes the files unreadable without tiroir
-  (S5) and needs key distribution to every team member.
-- **`git filter-repo`** - the reference tool, but needs the `git` executable
-  and Python (ADR-010).
+  avoids rewriting history, but makes clones and mirrors unreadable without
+  tiroir (S5).
 - **Recording purged paths in clear** - simplest to check, but publishes the
-  very names (client names in paths) the purge is meant to erase.
+  very names (client names in paths) the purge is meant to erase, to every
+  clone and mirror.
 
 ## Consequences
 
-A purge rewrites commit ids: every clone must sync before writing again, which
-tiroir does automatically. Path digests let someone who knows the store id
-confirm a guessed path was purged; they do not reveal it. The guarantee stops
-at what tiroir controls: a clone that never syncs again keeps the data, and a
-Git host may keep unreachable objects until its own garbage collection runs
-(GitHub requires a support request to purge cached views). The documentation
-states this, recommends a self-hosted Forgejo for stores that need erasure,
-and describes how to trigger its garbage collection. The host must allow the
-force-push; the store's branch must not be protected against it.
+A purge rewrites commit ids: read-only clones must be re-cloned, which their
+next fetch reveals, and the documentation says so. The guarantee stops at what
+the server controls: read-only clones, server backups made before the purge,
+and a mirror host's own caches (GitHub keeps cached views until a support
+request) still hold the data; the documentation states this, recommends
+self-hosted mirrors for stores that need erasure, and explains how to drop old
+backups. Masking links changes files in other drawers, the one modification of
+log entries the invariants allow (E4, E5).
