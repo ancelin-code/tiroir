@@ -1,0 +1,76 @@
+[project]
+name = "tiroir"
+version = "0.1.0"
+description = "A self-hosted memory server for teams"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dependencies = [
+  "mcp",
+  "starlette",
+  "uvicorn",
+  "jinja2",
+  "python-multipart",
+  "ruamel.yaml",
+  "pygit2",
+  "PyStemmer",
+  "argon2-cffi",
+  "httpx",
+  "loguru",
+]
+
+[project.scripts]
+tiroir = "tiroir.cli.main:main"
+
+[dependency-groups]
+dev = [
+  "ruff",
+  "pyrefly",
+  "pytest",
+  "hypothesis",
+  "import-linter",
+  "pip-audit",
+]
+
+[build-system]
+requires = ["uv_build>=0.9,<0.10"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 88
+src = ["src", "tests"]
+extend-exclude = ["delivery", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "T20"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/tiroir/cli/**" = ["T20"]
+
+[tool.pyrefly]
+preset = "strict"
+project-includes = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.importlinter]
+root_package = "tiroir"
+
+[[tool.importlinter.contracts]]
+name = "The core imports no surface and no host"
+type = "forbidden"
+source_modules = ["tiroir.core"]
+forbidden_modules = ["tiroir.server", "tiroir.cli", "tiroir.adapters"]
+
+[[tool.importlinter.contracts]]
+name = "The CLI imports neither the server nor an adapter"
+type = "forbidden"
+source_modules = ["tiroir.cli"]
+forbidden_modules = ["tiroir.server", "tiroir.adapters"]
+
+[[tool.importlinter.contracts]]
+name = "The server and the adapters are independent"
+type = "independence"
+modules = ["tiroir.server", "tiroir.adapters"]

@@ -6,3 +6,12 @@ Thumbs.db
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Local server data
+/data/

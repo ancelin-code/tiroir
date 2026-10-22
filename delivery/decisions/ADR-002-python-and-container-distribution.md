@@ -40,7 +40,14 @@ target became a server.
   - `pygit2`, plus the `git` executable and `git-filter-repo` in the image
     (ADR-010, ADR-011);
   - `argon2-cffi` (ADR-015), `httpx` (external embedding service, mirrors'
-    HTTPS checks).
+    HTTPS checks);
+  - `loguru`: logging (below); pure Python, no dependency on Linux.
+- **Logs:** `print` is banned outside the command line package
+  (`tiroir.cli`), where it writes the command's results; ruff's `T20` rules
+  enforce it. Everything else logs with loguru, configured with
+  `diagnose=False` so tracebacks never show variable values, which could be
+  memory content (Y5). The server writes JSON lines to stdout and routes the
+  standard library loggers (Uvicorn, MCP SDK, httpx) into loguru.
 - **Distribution:** one container image per release, `linux/amd64` and
   `linux/arm64`, built in GitHub Actions and published to the GitHub container
   registry with build provenance attestations, plus a `compose.yaml` that runs
