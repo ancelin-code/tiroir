@@ -42,17 +42,12 @@ target became a server.
   - `argon2-cffi` (ADR-015), `httpx` (external embedding service, mirrors'
     HTTPS checks);
   - `loguru`: logging (below); pure Python, no dependency on Linux.
-- **Output and logs:** `print` is banned, enforced by ruff's `T20` rules.
-  - What a command was asked for (results, usage, the `error: <code>:
-    <message>` lines of the CLI contract) goes through `tiroir.cli.output`:
-    `out()` to stdout, `err()` to stderr. It is not logging.
-  - Everything else is logged with loguru (`from loguru import logger`). The
-    server's sink writes JSON lines to stdout for the container runtime.
-  - Loguru is configured with `diagnose=False`: its default prints the values
-    of local variables in tracebacks, which would put memory content in logs
-    (Y5). No log line carries memory content, a query string or a body.
-  - The standard library loggers of Uvicorn, the MCP SDK and httpx are routed
-    into loguru, so the server has one log format.
+- **Logs:** `print` is banned outside the command line package
+  (`tiroir.cli`), where it writes the command's results; ruff's `T20` rules
+  enforce it. Everything else logs with loguru, configured with
+  `diagnose=False` so tracebacks never show variable values, which could be
+  memory content (Y5). The server writes JSON lines to stdout and routes the
+  standard library loggers (Uvicorn, MCP SDK, httpx) into loguru.
 - **Distribution:** one container image per release, `linux/amd64` and
   `linux/arm64`, built in GitHub Actions and published to the GitHub container
   registry with build provenance attestations, plus a `compose.yaml` that runs

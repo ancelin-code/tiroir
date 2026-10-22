@@ -3,20 +3,18 @@
 import sys
 from importlib.metadata import version
 
-from tiroir.cli.output import err, out
-
 USAGE = "usage: tiroir [--version] [--help]"
 
 
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
     if "--version" in args:
-        out(version("tiroir"))
+        print(version("tiroir"))
         return 0
     if "--help" in args or not args:
-        out(USAGE)
+        print(USAGE)
         return 0
-    err(USAGE)
+    print(USAGE, file=sys.stderr)
     return 2
 
 
