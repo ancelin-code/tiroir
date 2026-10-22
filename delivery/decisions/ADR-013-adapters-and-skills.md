@@ -48,7 +48,9 @@ cannot be a static file. Members install nothing but what their host offers
   the stores they are granted: a description of at most 150 tokens in the
   stores' memory language naming the drawer types and shared-space topics
   (C5, C5c), and a body explaining the tools, scoping, confirmation and
-  audience rules. It never names a store the member cannot reach (X1a). The
+  audience rules, and when to write: a log entry for each new fact,
+  decision, deadline or document about a drawer, a summary proposal when a
+  durable fact changes, nothing for chatter (W7). It never names a store the member cannot reach (X1a). The
   member downloads it as a skill archive from their account page, which
   states when it is out of date (after a migration or an access change); the
   `tiroir_status` tool says so too. Uploading it is one documented step in
