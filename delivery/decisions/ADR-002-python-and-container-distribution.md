@@ -48,6 +48,10 @@ target became a server.
   `diagnose=False` so tracebacks never show variable values, which could be
   memory content (Y5). The server writes JSON lines to stdout and routes the
   standard library loggers (Uvicorn, MCP SDK, httpx) into loguru.
+- **Command line:** parsed with the standard library's `argparse`, one
+  sub-parser per command group of the CLI contract (`tiroir admin members
+  add`, …); no Click or Typer, which would add a dependency for what
+  `argparse` already does, including the exit code 2 on a usage error.
 - **Distribution:** one container image per release, `linux/amd64` and
   `linux/arm64`, built in GitHub Actions and published to the GitHub container
   registry with build provenance attestations, plus a `compose.yaml` that runs
