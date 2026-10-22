@@ -1,7 +1,7 @@
 # Decomposition: tiroir v1
 
-**Status:** draft
-**Approved by:** —
+**Status:** approved
+**Approved by:** Ancelin Serre, 2026-10-22 (milestone plan and the skeleton's cut)
 
 ## Source
 
