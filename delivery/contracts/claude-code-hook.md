@@ -1,6 +1,6 @@
 # Contract: Claude Code prompt hook
 
-**Status:** draft
+**Status:** agreed
 **Parties:** the Claude Code plugin (`plugins/claude-code/`, hook and MCP
 declarations), `tiroir.server` (`tiroir_context` tool, `mcp-tools.md`),
 `tiroir.adapters.claude_code` (context block rendering), `tiroir.core`

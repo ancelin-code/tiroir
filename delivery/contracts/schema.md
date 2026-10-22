@@ -1,6 +1,6 @@
 # Contract: store schema (`tiroir.yaml`)
 
-**Status:** draft
+**Status:** agreed
 **Parties:** core (schema loading and validation, store, index, detection,
 context, migration), init skill, presets, CLI `doctor`, memory-skill generator.
 

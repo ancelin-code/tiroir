@@ -1,6 +1,6 @@
 # ADR-004: Keep stores self-describing, and hold members, access and server state in one server database
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

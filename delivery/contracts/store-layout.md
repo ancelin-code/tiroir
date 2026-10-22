@@ -1,6 +1,6 @@
 # Contract: store layout and commit format
 
-**Status:** draft
+**Status:** agreed
 **Parties:** core (store reading and writing, index, history, purge,
 migration), presets and their synthetic datasets, evaluation datasets, anyone
 reading a clone or mirror of a store without tiroir (S5).

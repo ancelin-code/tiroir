@@ -1,6 +1,6 @@
 # ADR-008: Detect drawers by exact matching of declared names, and by working directory
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-21
 
 ## Context

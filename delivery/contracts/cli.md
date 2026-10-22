@@ -1,6 +1,6 @@
 # Contract: command-line interface
 
-**Status:** draft
+**Status:** agreed
 **Parties:** `tiroir.cli` (provider); `tiroir.server` (the MCP endpoint the
 member CLI calls), `tiroir.core` (the administration CLI), the documentation,
 CI benchmarks, the evaluation harness and the deployment stack (ADR-016)

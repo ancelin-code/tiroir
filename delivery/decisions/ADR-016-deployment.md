@@ -1,6 +1,6 @@
 # ADR-016: Deploy with Docker Compose behind Caddy, keep all state in one data volume, and back up, restore and upgrade with tiroir commands
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

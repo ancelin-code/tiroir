@@ -1,6 +1,6 @@
 # ADR-015: Authenticate members with a password on the server, act as the OAuth authorization server for MCP clients, and issue personal tokens for Git and the CLI
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-22
 
 ## Context

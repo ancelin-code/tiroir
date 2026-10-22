@@ -1,6 +1,6 @@
 # ADR-014: Link files with Obsidian wikilinks and detected mentions, indexed but never followed
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-21
 
 ## Context
