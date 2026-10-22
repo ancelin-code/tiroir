@@ -2,7 +2,8 @@
 
 **Status:** approved
 **Approved by:** Ancelin Serre, 2026-10-22 (revises the local-first version
-approved on 2026-10-21: v1 is a self-hosted server)
+approved on 2026-10-21: v1 is a self-hosted server; amended the same day:
+OAuth client metadata fetching added to the network invariant, and W7)
 
 ## Problem
 
@@ -261,6 +262,14 @@ built after the Must set and may slip to a later release.
   confirmation.
 - **W6.** A member with read-only access to a store cannot write to it; the
   refusal says so.
+- **W7.** The agent records what is worth remembering without being asked:
+  the memory skill (C5c) tells it when to append a log entry and when to
+  propose a summary update. Acceptance: on a scripted set of at least ten
+  conversations about a client of the synthetic accounting store in which a
+  new fact is established (a decision, a deadline, a document received), the
+  agent appends a log entry or proposes a summary update for that client in at
+  least eight; on at least five conversations that establish nothing new, it
+  writes nothing.
 
 ### Erasure (Must)
 
@@ -439,7 +448,9 @@ These hold for every task and every release.
 - The server sends nothing outside the machine it runs on except: to
   configured mirrors; a store's content to the external embedding service
   selected for that store (R4); the one-time download of models from a
-  documented source; and certificate issuance. No telemetry.
+  documented source; certificate issuance; and fetching the public metadata
+  document of an OAuth client connecting to the server (ADR-015). No
+  telemetry.
 - Scoped reads never cross drawers or stores (X1), and a member never reaches
   a store they were not granted (X1a).
 - Log entries are never modified, and only a purge removes them (W1, E4); a
@@ -508,8 +519,7 @@ None at this stage.
 
 ## Sources
 
-- `docs/brief.md` — product brief (its §9 already described the server mode;
-  the brief is not yet updated for this revision).
+- `docs/brief.md` — product brief, updated for this revision.
 - `docs/research/prior-art.md` — review of agentcairn, Cairn, agent-memory-kit,
   Basic Memory, claude-mem, agentmemory and the Agent Memory Repo format.
 - Decisions of the project owner, 2026-10-21: self-hosted server first, no
