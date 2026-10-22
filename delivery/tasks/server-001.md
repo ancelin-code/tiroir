@@ -41,7 +41,8 @@ Files this task is expected to touch:
 - `src/tiroir/server/app.py`: the Starlette application factory
   `create_app(core_or_data_dir)`, `/health` per the
   [HTTP routes contract](../contracts/http-routes.md), JSON request logging
-- `src/tiroir/server/logging.py`
+- `src/tiroir/server/logging.py`: the loguru set-up of ADR-002 (JSON lines on
+  stdout, `diagnose=False`, standard library loggers routed into loguru)
 - `src/tiroir/cli/admin.py`: `tiroir admin init` (creates the first
   administrator if none exists, prints their handle and a one-time sign-in
   link or initial password that must be changed), `tiroir admin members

@@ -36,5 +36,18 @@ def test_unknown_argument_fails(capsys: pytest.CaptureFixture[str]) -> None:
 
     # Then
     assert code == 2
-    assert "usage: tiroir" in capsys.readouterr().out
+    assert capsys.readouterr().err.startswith("usage: tiroir")
 ```
+
+## Output and logs
+
+`print` is banned (ruff `T20`), as
+[ADR-002](delivery/decisions/ADR-002-python-and-container-distribution.md)
+records:
+
+- a command's own output (results, usage, CLI error lines) goes through
+  `tiroir.cli.output`: `out()` for stdout, `err()` for stderr;
+- everything else is a log: `from loguru import logger`, then
+  `logger.debug/info/warning/error(...)`;
+- no log line, error message or commit message carries memory content (Y5):
+  log identifiers, codes and counts, never the text of a note or a query.

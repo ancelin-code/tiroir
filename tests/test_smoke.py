@@ -38,4 +38,6 @@ def test_unknown_argument_fails(capsys: pytest.CaptureFixture[str]) -> None:
 
     # Then
     assert code == 2
-    assert "usage: tiroir" in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.startswith("usage: tiroir")
