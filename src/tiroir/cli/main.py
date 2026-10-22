@@ -3,11 +3,15 @@
 import sys
 from importlib.metadata import version
 
-USAGE = "usage: tiroir [--version] [--help]"
+from tiroir.cli.admin import run
+
+USAGE = "usage: tiroir [--version] [--help] admin ..."
 
 
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
+    if args and args[0] == "admin":
+        return run(args[1:])
     if "--version" in args:
         print(version("tiroir"))
         return 0
