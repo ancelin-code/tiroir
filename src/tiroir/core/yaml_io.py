@@ -9,7 +9,7 @@ is safe and double-quoted otherwise.
 import json
 import math
 from collections.abc import Mapping, Sequence
-from datetime import date
+from datetime import UTC, date, datetime
 from functools import lru_cache
 from typing import Any
 
@@ -160,6 +160,10 @@ def _scalar(value: object) -> str:
         if math.isinf(value):
             return ".inf" if value > 0 else "-.inf"
         return repr(value)
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            raise TypeError("cannot write a datetime without a time zone")
+        return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     if isinstance(value, date):
         return value.isoformat()
     if isinstance(value, str):
