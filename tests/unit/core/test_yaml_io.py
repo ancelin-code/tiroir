@@ -1,6 +1,6 @@
 """Tests for the shared YAML 1.2 reader and canonical writer."""
 
-from datetime import date
+from datetime import UTC, date, datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -129,6 +129,30 @@ def test_dump_separates_top_level_entries_on_request() -> None:
 
     # Then
     assert text == "a: 1\n\nb:\n  c: 2\n  d: 3\n\ne: 4\n"
+
+
+def test_dump_writes_a_datetime_unquoted_in_utc() -> None:
+    # Given
+    when = datetime(2026, 10, 21, 16, 32, 5, tzinfo=timezone(timedelta(hours=2)))
+
+    # When
+    text = dump_yaml({"date": when})
+
+    # Then
+    assert text == "date: 2026-10-21T14:32:05Z\n"
+    assert load_yaml(text)["date"] == datetime(2026, 10, 21, 14, 32, 5, tzinfo=UTC)
+
+
+def test_dump_refuses_a_datetime_without_a_time_zone() -> None:
+    # Given
+    data = {"date": datetime(2026, 10, 21, 14, 32, 5)}
+
+    # When
+    with pytest.raises(TypeError) as caught:
+        dump_yaml(data)
+
+    # Then
+    assert "time zone" in str(caught.value)
 
 
 def test_dump_refuses_a_list_of_mappings() -> None:
