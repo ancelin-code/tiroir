@@ -9,9 +9,10 @@ import re
 import secrets
 import sqlite3
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from importlib import resources
 from pathlib import Path
 
 from argon2 import PasswordHasher
@@ -56,51 +57,24 @@ class Member:
     disabled: str | None
 
 
-Migration = Callable[[sqlite3.Connection], None]
+def load_migrations() -> tuple[str, ...]:
+    """The SQL scripts of `migrations/`, ordered by their number.
 
-
-_SKELETON = (
+    Script `NNNN_name.sql` brings the schema from version `NNNN - 1` to `NNNN`;
+    the numbers start at 1 and have no gap.
     """
-    CREATE TABLE members (
-        id TEXT PRIMARY KEY,
-        handle TEXT NOT NULL UNIQUE,
-        display_name TEXT NOT NULL,
-        password_hash TEXT NOT NULL,
-        is_admin INTEGER NOT NULL DEFAULT 0,
-        must_change_password INTEGER NOT NULL DEFAULT 0,
-        created TEXT NOT NULL,
-        disabled TEXT
+    folder = resources.files(__package__).joinpath("migrations")
+    files = sorted(
+        (f for f in folder.iterdir() if f.name.endswith(".sql")),
+        key=lambda f: f.name,
     )
-    """,
-    """
-    CREATE TABLE stores (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE,
-        audience TEXT NOT NULL CHECK (audience IN ('personal', 'team')),
-        language TEXT NOT NULL,
-        created TEXT NOT NULL
-    )
-    """,
-    """
-    CREATE TABLE grants (
-        member TEXT NOT NULL REFERENCES members (id),
-        store_id TEXT NOT NULL REFERENCES stores (id),
-        access TEXT NOT NULL CHECK (access IN ('read', 'write')),
-        PRIMARY KEY (member, store_id)
-    )
-    """,
-)
+    for expected, file in enumerate(files, start=1):
+        if not file.name.startswith(f"{expected:04d}_"):
+            raise RuntimeError(f"migration {file.name} should be number {expected:04d}")
+    return tuple(file.read_text(encoding="utf-8") for file in files)
 
 
-def _create_skeleton(conn: sqlite3.Connection) -> None:
-    # One `execute` per statement: `executescript` would commit the
-    # migration's transaction first and leave a failed migration half applied.
-    for statement in _SKELETON:
-        conn.execute(statement)
-
-
-# Ordered: entry `i` brings the schema from version `i` to version `i + 1`.
-MIGRATIONS: Sequence[Migration] = (_create_skeleton,)
+MIGRATIONS = load_migrations()
 
 
 def _current_version(conn: sqlite3.Connection) -> int:
@@ -109,21 +83,24 @@ def _current_version(conn: sqlite3.Connection) -> int:
     return int(row[0] or 0)
 
 
-def migrate(
-    conn: sqlite3.Connection, migrations: Sequence[Migration] = MIGRATIONS
-) -> int:
+def migrate(conn: sqlite3.Connection, migrations: Sequence[str] = MIGRATIONS) -> int:
     """Apply the missing migrations in order, one transaction each."""
     version = _current_version(conn)
     for target in range(version + 1, len(migrations) + 1):
-        conn.execute("BEGIN")
+        # One script, so that a failure rolls the migration and its version
+        # back together: `executescript` commits any transaction opened before.
+        script = (
+            f"BEGIN;\n{migrations[target - 1]}\n;\n"
+            f"DELETE FROM schema_version;\n"
+            f"INSERT INTO schema_version (version) VALUES ({target});\n"
+            "COMMIT;"
+        )
         try:
-            migrations[target - 1](conn)
-            conn.execute("DELETE FROM schema_version")
-            conn.execute("INSERT INTO schema_version (version) VALUES (?)", (target,))
+            conn.executescript(script)
         except BaseException:
-            conn.rollback()
+            if conn.in_transaction:
+                conn.execute("ROLLBACK")
             raise
-        conn.commit()
         logger.info("server database migrated to version {}", target)
     return max(version, len(migrations))
 

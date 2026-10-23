@@ -43,13 +43,8 @@ def test_old_database_at_version_zero_gets_missing_migrations(tmp_path: Path) ->
 def test_migrations_apply_in_order_and_only_once() -> None:
     # Given
     conn = sqlite3.connect(":memory:", isolation_level=None)
-    calls: list[int] = []
-
-    def first(_: sqlite3.Connection) -> None:
-        calls.append(1)
-
-    def second(_: sqlite3.Connection) -> None:
-        calls.append(2)
+    first = "CREATE TABLE one (x);"
+    second = "CREATE TABLE two (x);"
 
     # When
     serverdb.migrate(conn, (first,))
@@ -57,19 +52,19 @@ def test_migrations_apply_in_order_and_only_once() -> None:
     serverdb.migrate(conn, (first, second))
 
     # Then
-    assert calls == [1, 2]
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master")}
+    version = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()[0]
+    assert {"one", "two"} <= tables
+    assert version == 2
 
 
 def test_failed_migration_leaves_the_version_unchanged() -> None:
     # Given
     conn = sqlite3.connect(":memory:", isolation_level=None)
-
-    def broken(c: sqlite3.Connection) -> None:
-        c.execute("CREATE TABLE t (x)")
-        raise RuntimeError("boom")
+    broken = "CREATE TABLE t (x); SELECT * FROM table_that_does_not_exist;"
 
     # When
-    with pytest.raises(RuntimeError):
+    with pytest.raises(sqlite3.OperationalError):
         serverdb.migrate(conn, (broken,))
 
     # Then
@@ -82,13 +77,12 @@ def test_failed_migration_leaves_the_version_unchanged() -> None:
 def test_failed_skeleton_migration_leaves_no_table() -> None:
     # Given
     conn = sqlite3.connect(":memory:", isolation_level=None)
-
-    def skeleton_then_fail(c: sqlite3.Connection) -> None:
-        serverdb.MIGRATIONS[0](c)
-        raise RuntimeError("boom")
+    skeleton_then_fail = (
+        serverdb.MIGRATIONS[0] + "\nSELECT * FROM table_that_does_not_exist;"
+    )
 
     # When
-    with pytest.raises(RuntimeError):
+    with pytest.raises(sqlite3.OperationalError):
         serverdb.migrate(conn, (skeleton_then_fail,))
 
     # Then
@@ -96,6 +90,15 @@ def test_failed_skeleton_migration_leaves_no_table() -> None:
         "SELECT name FROM sqlite_master WHERE name IN ('members', 'stores', 'grants')"
     ).fetchall()
     assert tables == []
+
+
+def test_packaged_migrations_are_numbered_without_gap() -> None:
+    # Given / When
+    migrations = serverdb.load_migrations()
+
+    # Then
+    assert len(migrations) >= 1
+    assert "CREATE TABLE members" in migrations[0]
 
 
 def test_create_and_find_member_hashes_with_argon2id(tmp_path: Path) -> None:
