@@ -39,8 +39,8 @@ Files this task is expected to touch:
   writer (also used for frontmatter by `store-002`)
 - `src/tiroir/core/errors.py`: `CoreError` with `code` and a message free of
   memory content
-- `tests/core/test_schema.py`, `tests/core/test_yaml_io.py`,
-  `tests/core/fixtures/` (valid and invalid schema files)
+- `tests/unit/core/test_schema.py`, `tests/unit/core/test_yaml_io.py`,
+  `tests/unit/core/fixtures/` (valid and invalid schema files)
 
 Out of scope:
 
@@ -63,5 +63,5 @@ Out of scope:
 
 ## Validation
 
-`mise run test -- tests/core/test_schema.py tests/core/test_yaml_io.py`, then
+`mise run test -- tests/unit/core/test_schema.py tests/unit/core/test_yaml_io.py`, then
 `mise run check`.
