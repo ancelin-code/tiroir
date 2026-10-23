@@ -131,7 +131,7 @@ class Checker:
         return tuple(str(item) for item in value)
 
     def path_value(self, value: str, path: str, line: int | None) -> None:
-    """Record a violation unless `value` is a relative path using `/` only."""
+        """Record a violation unless `value` is a relative path using `/` only."""
         segments = value.split("/")
         if (
             value.startswith("/")
