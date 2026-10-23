@@ -1,0 +1,10 @@
+{
+	email {$TIROIR_ACME_EMAIL}
+}
+
+{$TIROIR_DOMAIN} {
+	# flush_interval -1 sends each chunk at once: MCP streams are not buffered.
+	reverse_proxy tiroir:8080 {
+		flush_interval -1
+	}
+}
