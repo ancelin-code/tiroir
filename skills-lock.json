@@ -3,33 +3,45 @@
   "skills": {
     "delivery-decompose": {
       "source": "ancelin-code/delivery-kit",
+      "ref": "v0.1.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-decompose/SKILL.md",
       "computedHash": "66c175fb51441d84b0bca9966630353d08196c2a753d0dbb61b6b28791ce741c"
     },
     "delivery-implement": {
       "source": "ancelin-code/delivery-kit",
+      "ref": "v0.1.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-implement/SKILL.md",
-      "computedHash": "0c2681434c28ec3c82f92ebe5b6d3a60a116da39e304c3512287a582b425e01f"
+      "computedHash": "60b8dc8f9804b90d26d85bc64a1e239be50e78cc1987df9d7b6d430a34f43119"
     },
     "delivery-orchestrator": {
       "source": "ancelin-code/delivery-kit",
+      "ref": "v0.1.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-orchestrator/SKILL.md",
-      "computedHash": "6f1cace9384e39509506cfb098717b8441a1c528ac472dfc2ab1e11176dac71b"
+      "computedHash": "b169ba84bce0b7ce7c9ff4fa42dd85dbaf72042e8139407702a12acc7f9dad66"
+    },
+    "delivery-refine": {
+      "source": "ancelin-code/delivery-kit",
+      "ref": "v0.1.0",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/delivery-refine/SKILL.md",
+      "computedHash": "4a0f56cc750aeb7fb7d4037cb6684036ecf34bdf5a7311bfe374f561dc0d64c3"
     },
     "delivery-spec": {
       "source": "ancelin-code/delivery-kit",
+      "ref": "v0.1.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-spec/SKILL.md",
       "computedHash": "8e345269753d15552d824fdc6bcdd55626398ca527c92ad8457c74ad73817dce"
     },
     "delivery-status": {
       "source": "ancelin-code/delivery-kit",
+      "ref": "v0.1.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/delivery-status/SKILL.md",
-      "computedHash": "f41b62f67b6557e14ed1f09b49977ab4caffb46ced0756409bfd9f11bbdbc10f"
+      "computedHash": "937b9bc54fc7aff80e82dcc27cbe263bfd780e643c4fb154673cf16b67b84955"
     }
   }
 }
