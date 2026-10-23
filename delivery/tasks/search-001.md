@@ -53,8 +53,9 @@ Files this task is expected to touch:
   an abstention
 - `src/tiroir/core/indexer.py`: the background indexer of ADR-009 (a thread
   with a queue of store ids, fed after each commit and at start)
-- `tests/core/test_index.py`, `tests/core/test_textnorm.py`,
-  `tests/core/test_lexical.py`, `tests/core/test_indexer.py`
+- `tests/unit/core/test_textnorm.py`, `tests/unit/core/test_chunking.py` (pure
+  logic), `tests/integration/test_index.py`, `tests/integration/test_lexical.py`,
+  `tests/integration/test_indexer.py` (real SQLite and Git)
 
 Out of scope:
 
@@ -84,6 +85,7 @@ Out of scope:
 
 ## Validation
 
-`mise run test -- tests/core/test_index.py tests/core/test_textnorm.py
-tests/core/test_lexical.py tests/core/test_indexer.py`, then
+`mise run test -- tests/unit/core/test_textnorm.py
+tests/unit/core/test_chunking.py tests/integration/test_index.py
+tests/integration/test_lexical.py tests/integration/test_indexer.py`, then
 `mise run check`.

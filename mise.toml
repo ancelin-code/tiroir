@@ -26,9 +26,14 @@ depends = ["sync"]
 run = "uv run pyrefly check"
 
 [tasks.test]
-description = "Run the tests"
+description = "Run every test"
 depends = ["sync"]
 run = "uv run pytest"
+
+[tasks."test:unit"]
+description = "Run the unit tests only (fast)"
+depends = ["sync"]
+run = "uv run pytest tests/unit"
 
 [tasks.check]
 description = "Run every check"

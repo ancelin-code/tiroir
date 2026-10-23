@@ -48,8 +48,8 @@ Files this task is expected to touch:
   generation
 - `src/tiroir/core/locks.py`: the per-store `fcntl` lock at
   `<data>/locks/<store-id>`, with a 10 s timeout raising `store.busy`
-- `tests/core/test_store.py`, `tests/core/test_layout.py`,
-  `tests/core/test_locks.py`
+- `tests/unit/core/test_layout.py` (slugs, paths, canonical frontmatter: pure
+  logic), `tests/integration/test_store.py`, `tests/integration/test_locks.py`
 
 Out of scope:
 
@@ -81,5 +81,6 @@ Out of scope:
 
 ## Validation
 
-`mise run test -- tests/core/test_store.py tests/core/test_layout.py
-tests/core/test_locks.py`, then `mise run check`.
+`mise run test -- tests/unit/core/test_layout.py
+tests/integration/test_store.py tests/integration/test_locks.py`, then
+`mise run check`.
