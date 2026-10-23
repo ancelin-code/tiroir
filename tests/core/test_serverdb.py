@@ -79,6 +79,25 @@ def test_failed_migration_leaves_the_version_unchanged() -> None:
     assert tables == []
 
 
+def test_failed_skeleton_migration_leaves_no_table() -> None:
+    # Given
+    conn = sqlite3.connect(":memory:", isolation_level=None)
+
+    def skeleton_then_fail(c: sqlite3.Connection) -> None:
+        serverdb.MIGRATIONS[0](c)
+        raise RuntimeError("boom")
+
+    # When
+    with pytest.raises(RuntimeError):
+        serverdb.migrate(conn, (skeleton_then_fail,))
+
+    # Then
+    tables = conn.execute(
+        "SELECT name FROM sqlite_master WHERE name IN ('members', 'stores', 'grants')"
+    ).fetchall()
+    assert tables == []
+
+
 def test_create_and_find_member_hashes_with_argon2id(tmp_path: Path) -> None:
     # Given
     conn = serverdb.open_server_db(tmp_path)

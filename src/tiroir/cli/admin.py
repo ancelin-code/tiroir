@@ -48,6 +48,8 @@ def _init(_args: argparse.Namespace) -> int:
         serverdb.create_member(
             conn, INITIAL_ADMIN_HANDLE, "Administrator", password, is_admin=True
         )
+    except ServerDbError as error:
+        return _error(_describe(error, INITIAL_ADMIN_HANDLE))
     finally:
         conn.close()
     print(f"administrator: {INITIAL_ADMIN_HANDLE}")
@@ -56,11 +58,11 @@ def _init(_args: argparse.Namespace) -> int:
 
 
 def _print_member(member: Member) -> None:
-    flags = [
-        flag
-        for flag, on in (("admin", member.is_admin), ("disabled", member.disabled))
-        if on
-    ]
+    flags: list[str] = []
+    if member.is_admin:
+        flags.append("admin")
+    if member.disabled is not None:
+        flags.append("disabled")
     suffix = f"  [{', '.join(flags)}]" if flags else ""
     print(f"{member.handle}\t{member.display_name}{suffix}")
 

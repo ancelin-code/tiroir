@@ -56,6 +56,23 @@ def test_second_init_refuses_with_exit_1(
     assert "already has an administrator" in captured.err
 
 
+def test_init_reports_a_taken_admin_handle_with_exit_1(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Given
+    main(["admin", "members", "add", "admin", "--name", "Not an administrator"])
+    capsys.readouterr()
+
+    # When
+    code = main(["admin", "init"])
+
+    # Then
+    captured = capsys.readouterr()
+    assert code == 1
+    assert captured.out == ""
+    assert "handle 'admin' is already used" in captured.err
+
+
 def test_add_member_prints_initial_password_only_once(
     data_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
