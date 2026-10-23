@@ -41,9 +41,10 @@ def test_unknown_argument_fails(capsys: pytest.CaptureFixture[str]) -> None:
 
 ## Logs
 
-No `print` outside `src/tiroir/cli/`, where it shows the command's results
-(ruff `T20` enforces it). Everything else uses `from loguru import logger`.
-Never log memory content (Y5): identifiers, codes and counts only.
+No `print` anywhere (ruff `T20`): use `from loguru import logger`, including
+for what a command shows the user (`logger.info` to stdout, `logger.error` to
+stderr, set up by `tiroir.cli.main.setup_logging`). Never log memory content
+(Y5): identifiers, codes and counts only.
 
 ## Command line
 

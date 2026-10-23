@@ -42,12 +42,14 @@ target became a server.
   - `argon2-cffi` (ADR-015), `httpx` (external embedding service, mirrors'
     HTTPS checks);
   - `loguru`: logging (below); pure Python, no dependency on Linux.
-- **Logs:** `print` is banned outside the command line package
-  (`tiroir.cli`), where it writes the command's results; ruff's `T20` rules
-  enforce it. Everything else logs with loguru, configured with
-  `diagnose=False` so tracebacks never show variable values, which could be
-  memory content (Y5). The server writes JSON lines to stdout and routes the
-  standard library loggers (Uvicorn, MCP SDK, httpx) into loguru.
+- **Logs:** `print` is banned everywhere, by ruff's `T20` rules; all output
+  goes through loguru. The command line sets loguru up to write bare messages,
+  INFO and below to stdout and WARNING and above to stderr, so a command's
+  results and errors keep the streams of the CLI contract. Loguru is always
+  configured with `diagnose=False` so tracebacks never show variable values,
+  which could be memory content (Y5). The server writes JSON lines to stdout
+  and routes the standard library loggers (Uvicorn, MCP SDK, httpx) into
+  loguru.
 - **Command line:** parsed with the standard library's `argparse`, one
   sub-parser per command group of the CLI contract (`tiroir admin members
   add`, …); no Click or Typer, which would add a dependency for what
