@@ -7,6 +7,7 @@ from tiroir.server.auth.oauth import (
     address_public,
     client_from_document,
     metadata_document_url_valid,
+    redirect_uri_allowed,
 )
 
 URL = "https://client.example/oauth/client.json"
@@ -118,3 +119,43 @@ def test_document_that_is_no_public_client_is_refused(document: object) -> None:
 
     # Then
     assert client is None
+
+
+@pytest.mark.parametrize(
+    ("uri", "allowed"),
+    [
+        ("https://app.example/callback", True),
+        ("https://app.example:8443/cb?x=1", True),
+        ("http://127.0.0.1:33418/callback", True),
+        ("http://127.0.0.1/callback", True),
+        ("http://[::1]:8080/cb", True),
+        ("http://localhost:3000/cb", True),
+        ("com.example.app:/callback", True),
+        ("com.example.app://callback", True),
+        ("http://app.example/cb", False),
+        ("http://127.0.0.2/cb", False),
+        ("http://localhost.attacker.example/cb", False),
+        ("https://app.example/cb#f", False),
+        ("https://app.example/cb#", False),
+        ("https:///cb", False),
+        ("https://app.example:99999/cb", False),
+        ("cursor://anysphere.cursor-mcp/oauth/callback", False),
+        ("javascript:alert(1)", False),
+        ("JavaScript:alert(1)", False),
+        ("data:text/html,x", False),
+        ("file:///etc/passwd", False),
+        ("vbscript:x", False),
+        ("blob:https://app.example/x", False),
+        ("com.example.app", False),
+        ("", False),
+    ],
+)
+def test_redirect_uri_rules(uri: str, allowed: bool) -> None:
+    # Given
+    candidate = uri
+
+    # When
+    verdict = redirect_uri_allowed(candidate)
+
+    # Then
+    assert verdict is allowed

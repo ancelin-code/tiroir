@@ -23,7 +23,13 @@ from starlette.types import Receive, Scope, Send
 from tiroir.cli.main import main
 from tiroir.core import serverdb
 from tiroir.server.app import create_app
-from tiroir.server.auth.oauth import IPAddress
+from tiroir.server.auth import oauth
+from tiroir.server.auth.oauth import (
+    MAX_PENDING_PER_MEMBER,
+    MAX_REDIRECT_URIS,
+    REGISTRATIONS_PER_ADDRESS,
+    IPAddress,
+)
 from tiroir.server.auth.sessions import CSRF_COOKIE
 from tiroir.server.auth.verify import require_member
 
@@ -185,14 +191,13 @@ def _play_client(
     ).json()
     verifier, code_challenge = _pkce()
 
-    authorize = client.get(
+    signin_redirect = client.get(
         server_metadata["authorization_endpoint"],
         params=_authorize_params(client_id, code_challenge),
     )
-    consent_url = authorize.headers["location"]
-    signin_redirect = client.get(consent_url)
     signed_in = _sign_in(client, _query(signin_redirect.headers["location"])["next"])
-    consent_page = client.get(signed_in.headers["location"])
+    consent_url = client.get(signed_in.headers["location"]).headers["location"]
+    consent_page = client.get(consent_url)
     approved = client.post(
         server_metadata["authorization_endpoint"],
         data={
@@ -242,7 +247,7 @@ def _assert_full_flow(flow: Flow) -> None:
     assert flow.server_metadata["issuer"] == ORIGIN
     assert flow.server_metadata["client_id_metadata_document_supported"] is True
     assert flow.server_metadata["code_challenge_methods_supported"] == ["S256"]
-    assert flow.signin_redirect.status_code == 303
+    assert flow.signin_redirect.status_code == 302
     assert flow.signin_redirect.headers["location"].startswith("/signin?next=")
     assert flow.consent_page.status_code == 200
     assert flow.callback["state"] == "state-1"
@@ -342,6 +347,8 @@ def test_plain_code_challenge_is_refused(server: Server) -> None:
     location = answer.headers["location"]
     assert location.startswith(REDIRECT_URI)
     assert _query(location)["error"] == "invalid_request"
+    assert _query(location)["iss"] == ORIGIN
+    assert _query(location)["state"] == "state-1"
     assert "consent" not in location
 
 
@@ -611,3 +618,320 @@ def test_tokens_and_passwords_stay_out_of_logs_and_database(
     for secret in secrets_seen:
         assert secret not in logs
         assert secret.encode() not in database
+
+
+def test_unknown_resource_error_redirect_carries_the_issuer(server: Server) -> None:
+    # Given
+    client = server.client
+    _, challenge = _pkce()
+    params = _authorize_params(CIMD_URL, challenge, resource="https://other/mcp")
+
+    # When
+    answer = client.get("/oauth/authorize", params=params)
+
+    # Then
+    assert answer.status_code == 302
+    assert _query(answer.headers["location"]) == {
+        "error": "invalid_target",
+        "error_description": "unknown resource",
+        "state": "state-1",
+        "iss": ORIGIN,
+    }
+
+
+def test_replayed_code_revokes_the_tokens_it_issued(server: Server) -> None:
+    # Given
+    client = server.client
+    _sign_in(client)
+    verifier, challenge = _pkce()
+    code = _code(client, CIMD_URL, challenge)
+    tokens = _exchange(client, CIMD_URL, code, verifier).json()
+
+    # When
+    replay = _exchange(client, CIMD_URL, code, verifier)
+
+    # Then
+    assert replay.status_code == 400
+    assert replay.json()["error"] == "invalid_grant"
+    assert (
+        client.get("/protected", headers=_bearer(tokens["access_token"])).status_code
+        == 401
+    )
+    assert _refresh(client, tokens["refresh_token"]).status_code == 400
+
+
+def test_replayed_refresh_token_revokes_the_whole_grant(server: Server) -> None:
+    # Given
+    client = server.client
+    _sign_in(client)
+    verifier, challenge = _pkce()
+    code = _code(client, CIMD_URL, challenge)
+    first = _exchange(client, CIMD_URL, code, verifier).json()
+    second = _refresh(client, first["refresh_token"]).json()
+
+    # When
+    replay = _refresh(client, first["refresh_token"])
+
+    # Then
+    assert replay.status_code == 400
+    assert replay.json()["error"] == "invalid_grant"
+    assert (
+        client.get("/protected", headers=_bearer(second["access_token"])).status_code
+        == 401
+    )
+    assert _refresh(client, second["refresh_token"]).status_code == 400
+
+
+def test_replayed_refresh_token_leaves_other_grants_alone(server: Server) -> None:
+    # Given
+    client = server.client
+    _sign_in(client)
+    verifier, challenge = _pkce()
+    first = _exchange(
+        client, CIMD_URL, _code(client, CIMD_URL, challenge), verifier
+    ).json()
+    other_verifier, other_challenge = _pkce()
+    other = _exchange(
+        client, CIMD_URL, _code(client, CIMD_URL, other_challenge), other_verifier
+    ).json()
+    _refresh(client, first["refresh_token"])
+
+    # When
+    _refresh(client, first["refresh_token"])
+
+    # Then
+    assert (
+        client.get("/protected", headers=_bearer(other["access_token"])).status_code
+        == 200
+    )
+
+
+def test_anonymous_authorize_goes_to_sign_in_with_the_request(server: Server) -> None:
+    # Given
+    client = server.client
+    _, challenge = _pkce()
+    params = _authorize_params(CIMD_URL, challenge)
+
+    # When
+    answer = client.get("/oauth/authorize", params=params)
+
+    # Then
+    assert answer.status_code == 302
+    next_path = _query(answer.headers["location"])["next"]
+    assert urlsplit(next_path).path == "/oauth/authorize"
+    assert _query(next_path) == params
+
+
+def _new_client(server: Server, address: str) -> TestClient:
+    return TestClient(
+        server.client.app,
+        base_url=ORIGIN,
+        follow_redirects=False,
+        client=(address, 1),
+    )
+
+
+def _consent(client: TestClient) -> str:
+    _, challenge = _pkce()
+    authorize = client.get(
+        "/oauth/authorize", params=_authorize_params(CIMD_URL, challenge)
+    )
+    return _query(authorize.headers["location"])["consent"]
+
+
+def _approve(client: TestClient, consent: str) -> httpx2.Response:
+    return client.post(
+        "/oauth/authorize",
+        data={
+            "csrf": client.cookies[CSRF_COOKIE],
+            "consent": consent,
+            "decision": "approve",
+        },
+    )
+
+
+def test_anonymous_flood_does_not_evict_a_pending_consent(
+    server: Server, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Given
+    monkeypatch.setattr(oauth, "MAX_PENDING", 3)
+    client = server.client
+    _sign_in(client)
+    consent = _consent(client)
+    attacker = _new_client(server, "198.51.100.7")
+    _, challenge = _pkce()
+    for _ in range(10):
+        attacker.get("/oauth/authorize", params=_authorize_params(CIMD_URL, challenge))
+
+    # When
+    answer = _approve(client, consent)
+
+    # Then
+    assert answer.status_code == 303
+    assert "code" in _query(answer.headers["location"])
+
+
+def test_member_flood_does_not_evict_another_members_consent(
+    server: Server, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Given
+    monkeypatch.setattr(oauth, "MAX_PENDING", 3)
+    with closing(serverdb.open_server_db(server.data_dir)) as conn:
+        serverdb.create_member(conn, "bob", "Bob", PASSWORD, must_change_password=False)
+    client = server.client
+    _sign_in(client)
+    consent = _consent(client)
+    bob = _new_client(server, "198.51.100.8")
+    bob.get("/signin")
+    bob.post(
+        "/signin",
+        data={"csrf": bob.cookies[CSRF_COOKIE], "handle": "bob", "password": PASSWORD},
+    )
+    _, challenge = _pkce()
+    flood = [
+        bob.get("/oauth/authorize", params=_authorize_params(CIMD_URL, challenge))
+        for _ in range(MAX_PENDING_PER_MEMBER + 5)
+    ]
+
+    # When
+    answer = _approve(client, consent)
+
+    # Then
+    assert answer.status_code == 303
+    assert "code" in _query(answer.headers["location"])
+    assert _query(flood[-1].headers["location"])["error"] == "temporarily_unavailable"
+
+
+def test_consent_belongs_to_the_member_who_asked(server: Server) -> None:
+    # Given
+    with closing(serverdb.open_server_db(server.data_dir)) as conn:
+        serverdb.create_member(conn, "bob", "Bob", PASSWORD, must_change_password=False)
+    client = server.client
+    _sign_in(client)
+    consent = _consent(client)
+    bob = _new_client(server, "198.51.100.8")
+    bob.get("/signin")
+    bob.post(
+        "/signin",
+        data={"csrf": bob.cookies[CSRF_COOKIE], "handle": "bob", "password": PASSWORD},
+    )
+
+    # When
+    answer = _approve(bob, consent)
+
+    # Then
+    assert answer.status_code == 400
+    assert "location" not in answer.headers
+
+
+def _register(client: TestClient, *redirect_uris: str) -> httpx2.Response:
+    return client.post("/oauth/register", json={"redirect_uris": list(redirect_uris)})
+
+
+@pytest.mark.parametrize(
+    "redirect_uri",
+    [
+        "https://app.example/callback",
+        "http://127.0.0.1:33418/callback",
+        "http://[::1]:8080/cb",
+        "http://localhost:3000/cb",
+        "com.example.app:/callback",
+    ],
+)
+def test_registration_accepts_allowed_redirect_uri(
+    server: Server, redirect_uri: str
+) -> None:
+    # Given
+    client = server.client
+
+    # When
+    answer = _register(client, redirect_uri)
+
+    # Then
+    assert answer.status_code == 201
+
+
+@pytest.mark.parametrize(
+    "redirect_uri",
+    [
+        "javascript:alert(1)",
+        "data:text/html,x",
+        "file:///etc/passwd",
+        "vbscript:x",
+        "blob:https://app.example/x",
+        "http://app.example/callback",
+        "http://192.168.1.2/cb",
+        "https://app.example/callback#fragment",
+        "cursor://anysphere.cursor-mcp/oauth/callback",
+    ],
+)
+def test_registration_refuses_unsafe_redirect_uri(
+    server: Server, redirect_uri: str
+) -> None:
+    # Given
+    client = server.client
+
+    # When
+    answer = _register(client, REDIRECT_URI, redirect_uri)
+
+    # Then
+    assert answer.status_code == 400
+    assert answer.json()["error"] == "invalid_redirect_uri"
+
+
+def test_registration_refuses_too_many_redirect_uris(server: Server) -> None:
+    # Given
+    uris = [f"http://127.0.0.1:{port}/cb" for port in range(MAX_REDIRECT_URIS + 1)]
+
+    # When
+    answer = _register(server.client, *uris)
+
+    # Then
+    assert answer.status_code == 400
+    assert answer.json()["error"] == "invalid_redirect_uri"
+
+
+def test_registrations_are_limited_per_client_address(server: Server) -> None:
+    # Given
+    attacker = _new_client(server, "198.51.100.9")
+    other = _new_client(server, "198.51.100.10")
+    for _ in range(REGISTRATIONS_PER_ADDRESS):
+        _register(attacker, REDIRECT_URI)
+
+    # When
+    refused = _register(attacker, REDIRECT_URI)
+    accepted = _register(other, REDIRECT_URI)
+
+    # Then
+    assert refused.status_code == 429
+    assert accepted.status_code == 201
+
+
+def test_full_client_store_refuses_registration(
+    server: Server, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Given
+    monkeypatch.setattr(oauth, "MAX_DCR_CLIENTS", 1)
+    client = server.client
+    registered = _register(client, REDIRECT_URI).json()
+    _sign_in(client)
+    verifier, challenge = _pkce()
+    code = _code(client, registered["client_id"], challenge)
+    _exchange(
+        client,
+        registered["client_id"],
+        code,
+        verifier,
+        client_secret=registered["client_secret"],
+    )
+    records: list[str] = []
+    sink = logger.add(lambda m: records.append(str(m)), level="WARNING")
+
+    # When
+    answer = _register(client, REDIRECT_URI)
+    logger.remove(sink)
+
+    # Then
+    assert answer.status_code == 503
+    assert answer.json()["error"] == "temporarily_unavailable"
+    assert any("client registrations are full" in record for record in records)

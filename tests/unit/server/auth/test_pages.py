@@ -38,12 +38,13 @@ def test_other_target_falls_back_to_sign_in(value: object) -> None:
     [
         ("http://127.0.0.1:33418/callback", " http://127.0.0.1:33418"),
         ("https://claude.ai/api/mcp/auth_callback", " https://claude.ai"),
-        (
-            "cursor://anysphere.cursor-mcp/oauth/callback",
-            " cursor://anysphere.cursor-mcp",
-        ),
+        ("cursor://anysphere.cursor-mcp/oauth/callback", ""),
         ("com.example.app:/callback", " com.example.app:"),
         ("https://a.example;script-src*/cb", ""),
+        ("javascript://a.example/%0aalert(1)", ""),
+        ("data:text/html,x", ""),
+        ("http://attacker.example/cb", ""),
+        ("https://a.example/cb#f", ""),
     ],
 )
 def test_form_target_allows_only_the_redirect_origin(

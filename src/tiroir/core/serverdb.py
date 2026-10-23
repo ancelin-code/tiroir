@@ -51,6 +51,10 @@ class MemberDisabled(ServerDbError):
     """The member is already disabled."""
 
 
+class ClientStoreFull(ServerDbError):
+    """Every registered client still has a live token or code: none can go."""
+
+
 @dataclass(frozen=True)
 class Member:
     id: str
@@ -305,15 +309,60 @@ class OAuthTokenHash:
     expires: int
 
 
-def save_oauth_client(
-    conn: sqlite3.Connection, client_id: str, metadata: str, secret_hash: str | None
-) -> None:
-    created = datetime.now(UTC).isoformat(timespec="seconds")
-    conn.execute(
-        "INSERT INTO oauth_clients (client_id, metadata, secret_hash, created)"
-        " VALUES (?, ?, ?, ?)",
-        (client_id, metadata, secret_hash, created),
+@dataclass(frozen=True)
+class SpentSecret:
+    """A code or refresh token already exchanged, remembered until `expires`."""
+
+    secret_hash: str
+    kind: Literal["code", "refresh"]
+    expires: int
+
+
+def _forget_idle_client(conn: sqlite3.Connection, now: float) -> bool:
+    """Delete the oldest client with no live token or code; `False` if none."""
+    cursor = conn.execute(
+        "DELETE FROM oauth_clients WHERE client_id = ("
+        " SELECT client_id FROM oauth_clients AS c"
+        " WHERE NOT EXISTS (SELECT 1 FROM oauth_tokens AS t"
+        "  WHERE t.client_id = c.client_id AND t.expires >= ?)"
+        " AND NOT EXISTS (SELECT 1 FROM oauth_codes AS o"
+        "  WHERE o.client_id = c.client_id AND o.expires >= ?)"
+        " ORDER BY created, rowid LIMIT 1)",
+        (now, now),
     )
+    return cursor.rowcount == 1
+
+
+def save_oauth_client(
+    conn: sqlite3.Connection,
+    client_id: str,
+    metadata: str,
+    secret_hash: str | None,
+    *,
+    limit: int | None = None,
+) -> None:
+    """Store a registered client, at most `limit` of them.
+
+    When the store is full, the oldest client with no live token or code goes;
+    raises `ClientStoreFull` when there is none.
+    """
+    created = datetime.now(UTC).isoformat(timespec="seconds")
+    conn.execute("BEGIN")
+    try:
+        count = conn.execute("SELECT COUNT(*) FROM oauth_clients").fetchone()[0]
+        if limit is not None and count >= limit:
+            if not _forget_idle_client(conn, time.time()):
+                raise ClientStoreFull(client_id)
+            logger.info("oldest idle oauth client forgotten")
+        conn.execute(
+            "INSERT INTO oauth_clients (client_id, metadata, secret_hash, created)"
+            " VALUES (?, ?, ?, ?)",
+            (client_id, metadata, secret_hash, created),
+        )
+    except BaseException:
+        conn.rollback()
+        raise
+    conn.commit()
 
 
 def oauth_client(
@@ -395,19 +444,38 @@ def _insert_tokens(
     )
 
 
+def _insert_spent(conn: sqlite3.Connection, grant_id: str, spent: SpentSecret) -> None:
+    conn.execute(
+        "INSERT INTO oauth_spent_secrets (secret_hash, kind, grant_id, expires)"
+        " VALUES (?, ?, ?, ?)",
+        (spent.secret_hash, spent.kind, grant_id, spent.expires),
+    )
+
+
+def _delete_grant(conn: sqlite3.Connection, grant_id: str) -> None:
+    conn.execute("DELETE FROM oauth_tokens WHERE grant_id = ?", (grant_id,))
+    conn.execute("DELETE FROM oauth_spent_secrets WHERE grant_id = ?", (grant_id,))
+
+
 def _purge_expired(conn: sqlite3.Connection, now: float) -> None:
     conn.execute("DELETE FROM oauth_codes WHERE expires < ?", (now,))
     conn.execute("DELETE FROM oauth_tokens WHERE expires < ?", (now,))
+    conn.execute("DELETE FROM oauth_spent_secrets WHERE expires < ?", (now,))
     conn.execute("DELETE FROM web_sessions WHERE expires < ?", (now,))
 
 
 def save_oauth_tokens(
-    conn: sqlite3.Connection, grant: OAuthGrant, tokens: Sequence[OAuthTokenHash]
+    conn: sqlite3.Connection,
+    grant: OAuthGrant,
+    tokens: Sequence[OAuthTokenHash],
+    spent_code: SpentSecret | None = None,
 ) -> None:
-    """Store a new grant's tokens, and forget whatever has expired."""
+    """Store a new grant's tokens and the code they came from; forget the expired."""
     conn.execute("BEGIN")
     _purge_expired(conn, time.time())
     _insert_tokens(conn, grant, tokens)
+    if spent_code is not None:
+        _insert_spent(conn, grant.grant_id, spent_code)
     conn.commit()
 
 
@@ -416,8 +484,12 @@ def rotate_refresh_token(
     old_hash: str,
     grant: OAuthGrant,
     tokens: Sequence[OAuthTokenHash],
+    spent_until: int,
 ) -> bool:
-    """Replace a grant's tokens, once: `False` when the refresh token is gone."""
+    """Replace a grant's tokens, once: `False` when the refresh token is gone.
+
+    The old refresh token is remembered as spent until `spent_until`.
+    """
     conn.execute("BEGIN")
     cursor = conn.execute(
         "DELETE FROM oauth_tokens WHERE token_hash = ? AND kind = 'refresh'",
@@ -427,8 +499,35 @@ def rotate_refresh_token(
         conn.rollback()
         return False
     conn.execute("DELETE FROM oauth_tokens WHERE grant_id = ?", (grant.grant_id,))
+    _insert_spent(conn, grant.grant_id, SpentSecret(old_hash, "refresh", spent_until))
     _insert_tokens(conn, grant, tokens)
     conn.commit()
+    return True
+
+
+def revoke_reused_secret(
+    conn: sqlite3.Connection,
+    secret_hash: str,
+    kind: Literal["code", "refresh"],
+    now: float,
+) -> bool:
+    """Delete the grant a spent code or refresh token led to, if it is one.
+
+    `True` when the secret had already been exchanged: whoever presents it
+    again may have stolen it, so every token of that grant goes.
+    """
+    conn.execute("BEGIN")
+    row = conn.execute(
+        "SELECT grant_id FROM oauth_spent_secrets"
+        " WHERE secret_hash = ? AND kind = ? AND expires >= ?",
+        (secret_hash, kind, now),
+    ).fetchone()
+    if row is None:
+        conn.rollback()
+        return False
+    _delete_grant(conn, row[0])
+    conn.commit()
+    logger.warning("reused oauth {} revoked grant {}", kind, row[0])
     return True
 
 
@@ -467,12 +566,15 @@ def active_member(conn: sqlite3.Connection, member_id: str) -> Member | None:
 
 
 def revoke_oauth_grant(conn: sqlite3.Connection, token_hash: str) -> None:
-    """Delete the access and refresh tokens of the grant this token belongs to."""
-    conn.execute(
-        "DELETE FROM oauth_tokens WHERE grant_id IN"
-        " (SELECT grant_id FROM oauth_tokens WHERE token_hash = ?)",
-        (token_hash,),
-    )
+    """Delete the tokens and spent secrets of the grant this token belongs to."""
+    row = conn.execute(
+        "SELECT grant_id FROM oauth_tokens WHERE token_hash = ?", (token_hash,)
+    ).fetchone()
+    if row is None:
+        return
+    conn.execute("BEGIN")
+    _delete_grant(conn, row[0])
+    conn.commit()
 
 
 def create_web_session(

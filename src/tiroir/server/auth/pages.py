@@ -8,11 +8,12 @@ SDK validates a client's request, then the member signs in and consents.
 import asyncio
 import re
 from typing import Any
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 from jinja2 import Environment, PackageLoader
 from loguru import logger
 from mcp.server.auth.handlers.authorize import AuthorizationHandler
+from mcp.server.auth.provider import construct_redirect_uri
 from starlette.datastructures import FormData
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
@@ -22,9 +23,12 @@ from starlette.templating import Jinja2Templates
 from tiroir.core import serverdb
 from tiroir.server.auth.oauth import (
     AUTHORIZE_PATH,
+    Authorizing,
     PendingAuthorization,
     TiroirProvider,
+    authorizing,
     limited,
+    redirect_uri_allowed,
 )
 from tiroir.server.auth.sessions import (
     SignInThrottle,
@@ -49,8 +53,11 @@ def _form_target(redirect_uri: str) -> str:
     """The CSP source of a client's redirect URI, where consent sends the browser.
 
     Browsers apply `form-action` to the redirect that follows a form, so the
-    consent page must allow it; anything unexpected allows nothing more.
+    consent page must allow it; anything unexpected allows nothing more, and
+    neither does a redirect URI no client may register.
     """
+    if not redirect_uri_allowed(redirect_uri):
+        return ""
     parts = urlsplit(redirect_uri)
     source = f"{parts.scheme}://{parts.netloc}" if parts.netloc else f"{parts.scheme}:"
     return f" {source}" if _SOURCE.fullmatch(source) else ""
@@ -200,7 +207,7 @@ class Pages:
             form = await request.form()
             consent_id = form.get("consent")
         if not isinstance(consent_id, str):
-            return await self.sdk_authorize.handle(request)
+            return await self._sdk_authorize(request, form)
         pending = self.provider.pending(consent_id)
         if pending is None:
             return _page(request, "consent.html", {"expired": True}, 400)
@@ -209,6 +216,8 @@ class Pages:
             return _signin_redirect(
                 f"{AUTHORIZE_PATH}?{urlencode({'consent': consent_id})}"
             )
+        if pending.member != member.id:
+            return _page(request, "consent.html", {"expired": True}, 400)
         if form is None:
             return self._consent_page(request, pending, consent_id, member)
         if not csrf_valid(request, form.get("csrf")):
@@ -220,6 +229,41 @@ class Pages:
         if target is None:
             return _page(request, "consent.html", {"expired": True}, 400)
         return RedirectResponse(target, 303)
+
+    async def _sdk_authorize(self, request: Request, form: FormData | None) -> Response:
+        """A new authorization request, checked by the SDK.
+
+        A signed-in member gets a pending consent; anybody else is sent to
+        sign in first, then back to the same request.
+        """
+        member = session_member(request, self.data_dir)
+        if member is not None and member.must_change_password:
+            member = None
+        if form is None:
+            query = request.url.query
+        else:
+            query = urlencode(
+                [(k, v) for k, v in form.multi_items() if isinstance(v, str)]
+            )
+        signin_url = f"{SIGNIN_PATH}?{urlencode({'next': f'{AUTHORIZE_PATH}?{query}'})}"
+        with authorizing(Authorizing(member, signin_url)):
+            response = await self.sdk_authorize.handle(request)
+        return self._with_issuer(response)
+
+    def _with_issuer(self, response: Response) -> Response:
+        """Add `iss` (RFC 9207) to an error the SDK sends to a client's redirect URI.
+
+        The SDK's other redirects, to sign-in or consent, carry no `error`.
+        """
+        location = response.headers.get("location")
+        if location is None:
+            return response
+        query = parse_qs(urlsplit(location).query)
+        if "error" in query and "iss" not in query:
+            response.headers["location"] = construct_redirect_uri(
+                location, iss=self.provider.origin
+            )
+        return response
 
     def _consent_page(
         self,

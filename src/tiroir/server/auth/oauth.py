@@ -13,14 +13,15 @@ import binascii
 import hmac
 import ipaddress
 import json
+import re
 import secrets
 import socket
 import sqlite3
 import time
 import uuid
 from collections import OrderedDict
-from collections.abc import Awaitable, Callable
-from contextlib import closing
+from collections.abc import Awaitable, Callable, Iterator
+from contextlib import closing, contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -47,6 +48,7 @@ from mcp.server.auth.provider import (
     AuthorizeError,
     OAuthAuthorizationServerProvider,
     RefreshToken,
+    RegistrationError,
     TokenError,
     construct_redirect_uri,
 )
@@ -65,7 +67,7 @@ from mcp.shared.inbound import MCP_PROTOCOL_VERSION_HEADER
 from pydantic import ValidationError
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 from starlette.routing import Route, request_response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -75,6 +77,7 @@ from tiroir.core.serverdb import (
     OAuthCode,
     OAuthGrant,
     OAuthTokenHash,
+    SpentSecret,
     open_server_db,
     secret_digest,
 )
@@ -90,6 +93,13 @@ REFRESH_TOKEN_SECONDS = 30 * 24 * 3600  # unused for that long, a grant ends
 CODE_SECONDS = 300
 CONSENT_SECONDS = 600
 MAX_PENDING = 1000
+MAX_PENDING_PER_MEMBER = 10  # a member's oldest goes first, nobody else's
+
+# Dynamic Client Registration: bounded per client, per address and in total.
+MAX_REDIRECT_URIS = 10
+REGISTRATIONS_PER_ADDRESS = 10
+REGISTRATION_WINDOW_SECONDS = 3600
+MAX_DCR_CLIENTS = 1000
 
 AUTHORIZE_PATH = "/oauth/authorize"
 CLIENT_AUTH_METHODS = ["none", "client_secret_post", "client_secret_basic"]
@@ -118,6 +128,12 @@ _EMBEDDING_IPV4 = (
 # The address of the client whose request is being handled, set by `limited`.
 _requester: ContextVar[str] = ContextVar("requester", default="")
 
+# Redirect URIs a client may register (RFC 8252): a private-use scheme is a
+# reverse domain name, such as `com.example.app`.
+_PRIVATE_USE_SCHEME = re.compile(r"[a-z][a-z0-9+-]*(\.[a-z0-9][a-z0-9+-]*)+")
+_LOOPBACK_HOSTS = ("127.0.0.1", "::1", "localhost")
+_FORBIDDEN_SCHEMES = frozenset({"javascript", "data", "file", "vbscript", "blob"})
+
 
 def metadata_document_url_valid(url: str) -> bool:
     """Whether `url` may name a client: HTTPS on 443, a path, no credentials or dots."""
@@ -138,6 +154,26 @@ def metadata_document_url_valid(url: str) -> bool:
         and "." not in segments
         and ".." not in segments
     )
+
+
+def redirect_uri_allowed(uri: str) -> bool:
+    """Whether a client may use `uri`: https, loopback http or a private-use scheme.
+
+    Loopback is `127.0.0.1`, `[::1]` or `localhost`, on any port. No redirect
+    URI may carry a fragment.
+    """
+    try:
+        parts = urlsplit(uri)
+        _ = parts.port
+    except ValueError:
+        return False
+    if "#" in uri or parts.scheme in _FORBIDDEN_SCHEMES:
+        return False
+    if parts.scheme == "https":
+        return bool(parts.hostname)
+    if parts.scheme == "http":
+        return parts.hostname in _LOOPBACK_HOSTS
+    return _PRIVATE_USE_SCHEME.fullmatch(parts.scheme) is not None
 
 
 def address_public(address: IPAddress) -> bool:
@@ -288,6 +324,33 @@ class PendingAuthorization:
     client: OAuthClientInformationFull
     params: AuthorizationParams
     expires: float
+    member: str  # the id of the member who asked, the only one who may answer
+
+
+@dataclass(frozen=True)
+class Authorizing:
+    """Who asks the authorization endpoint, for `TiroirProvider.authorize`."""
+
+    member: Member | None  # signed in, with a password of their own
+    signin_url: str  # where to sign in, coming back to the same request
+
+
+_authorizing: ContextVar[Authorizing | None] = ContextVar("authorizing", default=None)
+
+
+@contextmanager
+def authorizing(asking: Authorizing) -> Iterator[None]:
+    """Make who asks known to the provider while the SDK handles the request."""
+    token = _authorizing.set(asking)
+    try:
+        yield
+    finally:
+        _authorizing.reset(token)
+
+
+def _spent_until() -> int:
+    """How long an exchanged code or refresh token is remembered: a grant's life."""
+    return int(time.time()) + REFRESH_TOKEN_SECONDS
 
 
 def _new_tokens(scopes: tuple[str, ...]) -> tuple[OAuthToken, list[OAuthTokenHash]]:
@@ -341,6 +404,21 @@ class TiroirProvider(
 
     @override
     async def register_client(self, client_info: OAuthClientInformationFull) -> None:
+        """Store a client, unless a redirect URI is unsafe or there are too many.
+
+        Raises `serverdb.ClientStoreFull` when no stored client can make room.
+        """
+        uris = [str(uri) for uri in client_info.redirect_uris or ()]
+        if len(uris) > MAX_REDIRECT_URIS:
+            raise RegistrationError(
+                "invalid_redirect_uri", f"at most {MAX_REDIRECT_URIS} redirect URIs"
+            )
+        if not all(redirect_uri_allowed(uri) for uri in uris):
+            raise RegistrationError(
+                "invalid_redirect_uri",
+                "a redirect URI is https, loopback http or a private-use scheme"
+                " (RFC 8252), without fragment",
+            )
         secret = client_info.client_secret
         metadata = client_info.model_dump_json(
             exclude={"client_secret"}, exclude_none=True
@@ -351,6 +429,7 @@ class TiroirProvider(
                 client_info.client_id,
                 metadata,
                 None if secret is None else secret_digest(secret),
+                limit=MAX_DCR_CLIENTS,
             )
         logger.info("oauth client registered: {}", client_info.client_id)
 
@@ -362,15 +441,25 @@ class TiroirProvider(
         if params.resource is not None and params.resource.rstrip("/") != self.resource:
             raise AuthorizeError("invalid_target", "unknown resource")
         params = params.model_copy(update={"resource": self.resource})
+        asking = _authorizing.get()
+        if asking is None:
+            raise AuthorizeError("access_denied", "no member to ask")
+        if asking.member is None:
+            # Nothing is kept for an anonymous request: sign-in comes back to it.
+            return asking.signin_url
+        member_id = asking.member.id
         now = time.monotonic()
-        while self._pending and (
-            len(self._pending) >= MAX_PENDING
-            or next(iter(self._pending.values())).expires < now
-        ):
+        while self._pending and next(iter(self._pending.values())).expires < now:
             self._pending.popitem(last=False)
+        mine = [key for key, p in self._pending.items() if p.member == member_id]
+        for key in mine[: max(0, len(mine) - MAX_PENDING_PER_MEMBER + 1)]:
+            del self._pending[key]
+        if len(self._pending) >= MAX_PENDING:
+            logger.warning("pending authorizations full, request refused")
+            raise AuthorizeError("temporarily_unavailable", "try again later")
         consent_id = secrets.token_urlsafe(32)
         self._pending[consent_id] = PendingAuthorization(
-            client, params, now + CONSENT_SECONDS
+            client, params, now + CONSENT_SECONDS, member_id
         )
         return f"{self.origin}{AUTHORIZE_PATH}?{urlencode({'consent': consent_id})}"
 
@@ -425,8 +514,11 @@ class TiroirProvider(
     async def load_authorization_code(
         self, client: OAuthClientInformationFull, authorization_code: str
     ) -> AuthorizationCode | None:
+        code_hash = secret_digest(authorization_code)
         with self.connect() as conn:
-            found = serverdb.oauth_code(conn, secret_digest(authorization_code))
+            found = serverdb.oauth_code(conn, code_hash)
+            if found is None:
+                serverdb.revoke_reused_secret(conn, code_hash, "code", time.time())
         if found is None or found.client_id != client.client_id:
             return None
         return AuthorizationCode.model_validate(
@@ -447,10 +539,10 @@ class TiroirProvider(
     async def exchange_authorization_code(
         self, client: OAuthClientInformationFull, authorization_code: AuthorizationCode
     ) -> OAuthToken:
+        code_hash = secret_digest(authorization_code.code)
         with self.connect() as conn:
-            if not serverdb.consume_oauth_code(
-                conn, secret_digest(authorization_code.code)
-            ):
+            if not serverdb.consume_oauth_code(conn, code_hash):
+                serverdb.revoke_reused_secret(conn, code_hash, "code", time.time())
                 raise TokenError("invalid_grant", "authorization code already used")
             member = serverdb.active_member(conn, authorization_code.subject or "")
             if member is None:
@@ -463,17 +555,20 @@ class TiroirProvider(
                 resource=authorization_code.resource,
             )
             token, hashes = _new_tokens(grant.scopes)
-            serverdb.save_oauth_tokens(conn, grant, hashes)
+            spent = SpentSecret(code_hash, "code", _spent_until())
+            serverdb.save_oauth_tokens(conn, grant, hashes, spent)
         return token
 
     @override
     async def load_refresh_token(
         self, client: OAuthClientInformationFull, refresh_token: str
     ) -> RefreshToken | None:
+        token_hash = secret_digest(refresh_token)
+        now = time.time()
         with self.connect() as conn:
-            found = serverdb.oauth_token(
-                conn, secret_digest(refresh_token), "refresh", time.time()
-            )
+            found = serverdb.oauth_token(conn, token_hash, "refresh", now)
+            if found is None:
+                serverdb.revoke_reused_secret(conn, token_hash, "refresh", now)
         if found is None or found[0].client_id != client.client_id:
             return None
         grant, expires = found
@@ -502,7 +597,10 @@ class TiroirProvider(
             if serverdb.active_member(conn, grant.member) is None:
                 raise TokenError("invalid_grant", "member disabled")
             token, hashes = _new_tokens(grant.scopes)
-            if not serverdb.rotate_refresh_token(conn, old_hash, grant, hashes):
+            if not serverdb.rotate_refresh_token(
+                conn, old_hash, grant, hashes, _spent_until()
+            ):
+                serverdb.revoke_reused_secret(conn, old_hash, "refresh", time.time())
                 raise TokenError("invalid_grant", "refresh token already used")
         return token
 
@@ -594,6 +692,39 @@ def limited(handler: Callable[[Request], Awaitable[Response]]) -> ASGIApp:
     )
 
 
+class Registration:
+    """The SDK's client registration, limited per client address and in total."""
+
+    def __init__(self, provider: TiroirProvider) -> None:
+        self.sdk = RegistrationHandler(
+            provider, ClientRegistrationOptions(enabled=True)
+        )
+        self.attempts = SlidingWindow(
+            REGISTRATIONS_PER_ADDRESS, REGISTRATION_WINDOW_SECONDS
+        )
+
+    async def handle(self, request: Request) -> Response:
+        """Register a client; 429 for an address over its limit, 503 when full."""
+        requester = _requester.get()
+        if self.attempts.full(requester):
+            logger.warning("client registrations throttled")
+            return _unavailable(429, "too many registrations, try again later")
+        self.attempts.record(requester)
+        try:
+            return await self.sdk.handle(request)
+        except serverdb.ClientStoreFull:
+            logger.error("client registrations are full: no idle client to forget")
+            return _unavailable(503, "no room for a new client, try again later")
+
+
+def _unavailable(status: int, description: str) -> Response:
+    return JSONResponse(
+        {"error": "temporarily_unavailable", "error_description": description},
+        status,
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 def _client_endpoint(
     handler: Callable[[Request], Awaitable[Response]], methods: list[str]
 ) -> ASGIApp:
@@ -632,9 +763,7 @@ def oauth_routes(provider: TiroirProvider) -> list[Route]:
         {"resource": provider.resource, "authorization_servers": [origin]}
     )
     authenticator = HashedSecretAuthenticator(provider)
-    registration = RegistrationHandler(
-        provider, ClientRegistrationOptions(enabled=True)
-    )
+    registration = Registration(provider)
     read, write = ["GET", "OPTIONS"], ["POST", "OPTIONS"]
     return [
         Route(
