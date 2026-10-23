@@ -1,6 +1,6 @@
 [tools]
 python = "3.13"
-uv = "latest"
+uv = "0.12.10"
 
 [tasks.sync]
 description = "Install the locked dependencies"
@@ -34,6 +34,13 @@ run = "uv run pytest"
 description = "Run the unit tests only (fast)"
 depends = ["sync"]
 run = "uv run pytest tests/unit"
+
+[tasks.licenses]
+description = "Refuse a locked dependency under a GPL-family licence (ADR-001, ADR-002)"
+depends = ["sync"]
+# pygit2 is GPLv2 with the libgit2 linking exception, which allows linking it
+# into an Apache-2.0 program: it is the one reviewed exception.
+run = "uv run pip-licenses --partial-match --fail-on=GPL --ignore-packages pygit2"
 
 [tasks.check]
 description = "Run every check"

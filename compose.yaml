@@ -13,7 +13,7 @@ services:
       - tiroir-data:/data
 
   caddy:
-    image: caddy:2
+    image: caddy:2.11.2
     restart: unless-stopped
     depends_on:
       - tiroir
