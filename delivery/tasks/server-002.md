@@ -52,8 +52,8 @@ Files this task is expected to touch:
   sessions tables as a new schema migration
 - `src/tiroir/server/app.py`: mount `/.well-known/*`, `/oauth/*`, `/signin`,
   `/signout`
-- `tests/server/test_oauth_flow.py`, `tests/server/test_signin.py`,
-  `tests/server/test_cimd.py`
+- `tests/integration/test_oauth_flow.py`, `tests/integration/test_signin.py`,
+  `tests/integration/test_cimd.py`
 
 Out of scope:
 
@@ -81,6 +81,6 @@ Out of scope:
 
 ## Validation
 
-`mise run test -- tests/server/test_oauth_flow.py tests/server/test_signin.py
-tests/server/test_cimd.py`, then `mise run check`. The real check against
+`mise run test -- tests/integration/test_oauth_flow.py
+tests/integration/test_signin.py tests/integration/test_cimd.py`, then `mise run check`. The real check against
 Claude Desktop happens in `deploy-002`.
