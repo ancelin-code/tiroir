@@ -43,3 +43,14 @@ depends = ["lint", "typecheck", "test"]
 description = "Run the server"
 depends = ["sync"]
 run = "uv run tiroir admin serve"
+
+[tasks.image]
+description = "Build the container image locally and print its compressed size"
+run = """
+docker build -t tiroir:local .
+docker save tiroir:local | gzip | wc -c | awk '{printf "compressed size: %.1f MB\\n", $1 / 1000000}'
+"""
+
+[tasks.stack]
+description = "Start the Compose stack"
+run = "docker compose up -d --build"

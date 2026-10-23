@@ -1,0 +1,28 @@
+services:
+  tiroir:
+    image: ghcr.io/ancelin-code/tiroir:${TIROIR_TAG:-latest}
+    build: .
+    restart: unless-stopped
+    volumes:
+      - tiroir-data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - tiroir
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      TIROIR_DOMAIN: ${TIROIR_DOMAIN:?set TIROIR_DOMAIN in .env}
+      TIROIR_ACME_EMAIL: ${TIROIR_ACME_EMAIL:?set TIROIR_ACME_EMAIL in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  tiroir-data:
+  caddy-data:
+  caddy-config:
