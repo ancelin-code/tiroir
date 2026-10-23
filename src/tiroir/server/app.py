@@ -1,4 +1,4 @@
-"""The Starlette application: `/health` and the JSON request log."""
+"""The Starlette application: `/health`, sign-in and OAuth, the request log."""
 
 import time
 from collections.abc import AsyncIterator
@@ -7,6 +7,7 @@ from importlib.metadata import version
 from os import environ
 from pathlib import Path
 
+import httpx
 from loguru import logger
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -15,9 +16,16 @@ from starlette.routing import Route
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from tiroir.core.serverdb import open_server_db
+from tiroir.server.auth.oauth import (
+    ClientMetadataDocuments,
+    TiroirProvider,
+    oauth_routes,
+)
+from tiroir.server.auth.pages import page_routes
 from tiroir.server.logging import configure_logging
 
 DEFAULT_DATA_DIR = "/data"
+DEFAULT_DOMAIN = "localhost"
 
 
 class RequestLogMiddleware:
@@ -58,13 +66,21 @@ async def health(request: Request) -> Response:
     return JSONResponse({"status": "ready", "version": version("tiroir")})
 
 
-def create_app(core_or_data_dir: Path | str) -> Starlette:
-    """Build the application on a data directory.
+def create_app(
+    core_or_data_dir: Path | str,
+    *,
+    origin: str = f"https://{DEFAULT_DOMAIN}",
+    http_transport: httpx.AsyncBaseTransport | None = None,
+) -> Starlette:
+    """Build the application on a data directory, served at `origin`.
 
     The core facade arrives with the stores (server-003); until then the
-    data directory is the only thing the server needs.
+    data directory is the only thing the server needs. `origin` is the public
+    address behind Caddy, the OAuth issuer; `http_transport` carries the
+    fetches of client metadata documents (a test serves its own).
     """
     data_dir = Path(core_or_data_dir)
+    provider = TiroirProvider(data_dir, origin, ClientMetadataDocuments(http_transport))
 
     @asynccontextmanager
     async def lifespan(app: Starlette) -> AsyncIterator[None]:
@@ -74,7 +90,11 @@ def create_app(core_or_data_dir: Path | str) -> Starlette:
         app.state.ready = False
 
     app = Starlette(
-        routes=[Route("/health", health, methods=["GET"])],
+        routes=[
+            Route("/health", health, methods=["GET"]),
+            *oauth_routes(provider),
+            *page_routes(provider),
+        ],
         lifespan=lifespan,
     )
     app.state.ready = False
@@ -84,6 +104,12 @@ def create_app(core_or_data_dir: Path | str) -> Starlette:
 
 
 def app_from_env() -> Starlette:
-    """Uvicorn's application factory: logging, then the app on `TIROIR_DATA`."""
+    """Uvicorn's application factory: logging, then the app on `TIROIR_DATA`.
+
+    The public origin is `https://` and `TIROIR_DOMAIN`, the domain Caddy serves.
+    """
     configure_logging()
-    return create_app(environ.get("TIROIR_DATA", DEFAULT_DATA_DIR))
+    return create_app(
+        environ.get("TIROIR_DATA", DEFAULT_DATA_DIR),
+        origin=f"https://{environ.get('TIROIR_DOMAIN', DEFAULT_DOMAIN)}",
+    )

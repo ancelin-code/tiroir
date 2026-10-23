@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in - tiroir</title>
+</head>
+<body>
+<main>
+<h1>tiroir</h1>
+{% if member %}
+<p>Signed in as <strong>{{ member.handle }}</strong>.</p>
+<form method="post" action="/signout">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<button type="submit">Sign out</button>
+</form>
+{% else %}
+<h2>Sign in</h2>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/signin">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<input type="hidden" name="next" value="{{ next }}">
+<p><label for="handle">Handle</label><br>
+<input id="handle" name="handle" autocomplete="username" autocapitalize="none" required autofocus></p>
+<p><label for="password">Password</label><br>
+<input id="password" name="password" type="password" autocomplete="current-password" required></p>
+<p><button type="submit">Sign in</button></p>
+</form>
+{% endif %}
+</main>
+</body>
+</html>
