@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connect an application - tiroir</title>
+</head>
+<body>
+<main>
+<h1>tiroir</h1>
+{% if expired %}
+<p role="alert">This connection request has expired. Start again from your
+application.</p>
+{% else %}
+<h2>Connect an application</h2>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<p><strong>{{ client_name }}</strong> asks to use your memory as
+<strong>{{ member.handle }}</strong>, with the access you have to your
+stores.</p>
+<p>Application: <code>{{ client_id }}</code><br>
+It will return to: <code>{{ redirect_host }}</code></p>
+<form method="post" action="/oauth/authorize">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<input type="hidden" name="consent" value="{{ consent }}">
+<p><button type="submit" name="decision" value="approve">Allow</button>
+<button type="submit" name="decision" value="deny">Deny</button></p>
+</form>
+{% endif %}
+</main>
+</body>
+</html>

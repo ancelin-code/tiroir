@@ -98,7 +98,42 @@ def test_env_example_sets_every_variable_the_stack_reads() -> None:
     }
 
     # When
-    expected = {"TIROIR_DOMAIN", "TIROIR_ACME_EMAIL", "TIROIR_TAG"}
+    expected = {
+        "TIROIR_DOMAIN",
+        "TIROIR_ACME_EMAIL",
+        "TIROIR_TAG",
+        "TIROIR_PROXY_SUBNET",
+    }
 
     # Then
     assert names == expected
+
+
+def test_tiroir_trusts_forwarded_addresses_from_the_stack_network_only() -> None:
+    # Given
+    compose = _compose()
+
+    # When
+    trusted = compose["services"]["tiroir"]["environment"]["TIROIR_TRUSTED_PROXIES"]
+    subnets = [
+        entry["subnet"] for entry in compose["networks"]["default"]["ipam"]["config"]
+    ]
+
+    # Then
+    assert subnets == [trusted]
+    assert trusted.startswith("${TIROIR_PROXY_SUBNET:-")
+    assert "*" not in trusted
+
+
+def test_tiroir_knows_its_public_domain() -> None:
+    # Given
+    compose = _compose()
+
+    # When
+    environment = compose["services"]["tiroir"]["environment"]
+
+    # Then
+    assert (
+        environment["TIROIR_DOMAIN"]
+        == compose["services"]["caddy"]["environment"]["TIROIR_DOMAIN"]
+    )
