@@ -42,7 +42,7 @@ Files this task is expected to touch:
   spread over 2025 and 2026, under `log/<yyyy>/<mm>/`
 - `presets/accounting-firm/README.md`: what the preset contains and the
   statement that all data is synthetic
-- `tests/presets/test_accounting_firm.py`
+- `tests/integration/test_accounting_firm.py`
 
 Out of scope:
 
@@ -70,4 +70,4 @@ Out of scope:
 
 ## Validation
 
-`mise run test -- tests/presets/`, then `mise run check`.
+`mise run test -- tests/integration/test_accounting_firm.py`, then `mise run check`.
