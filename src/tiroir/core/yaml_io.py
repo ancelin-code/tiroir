@@ -10,11 +10,11 @@ import json
 import math
 from collections.abc import Mapping, Sequence
 from datetime import date
-from functools import cache
+from functools import lru_cache
 from typing import Any
 
 from ruamel.yaml import YAML
-from ruamel.yaml.error import MarkedYAMLError
+from ruamel.yaml.error import MarkedYAMLError, YAMLError
 from ruamel.yaml.events import (
     AliasEvent,
     CollectionStartEvent,
@@ -57,6 +57,9 @@ def _refuse_unsupported(text: str) -> None:
                 raise YamlError(
                     "multiple documents are not allowed", _line(event.start_mark)
                 )
+            # A %YAML 1.1 directive would turn plain yes/no/on into booleans.
+            if event.version is not None or event.tags:
+                raise YamlError("directives are not allowed", _line(event.start_mark))
         elif isinstance(event, AliasEvent):
             raise YamlError("aliases are not allowed", _line(event.start_mark))
         elif isinstance(event, NodeEvent) and event.anchor is not None:
@@ -81,6 +84,8 @@ def load_yaml(text: str) -> Any:
         mark = error.problem_mark or error.context_mark
         problem = error.problem or "invalid YAML"
         raise YamlError(problem, _line(mark)) from error
+    except YAMLError as error:  # unreadable input, such as a control character
+        raise YamlError("invalid YAML") from error
 
 
 def key_line(mapping: Any, key: str) -> int | None:
@@ -107,7 +112,7 @@ def node_line(node: Any) -> int | None:
         return None
 
 
-@cache
+@lru_cache(maxsize=4096)  # bounded: a long-running server writes many values
 def _resolves_to_itself(text: str) -> bool:
     try:
         reader = YAML(typ="safe")

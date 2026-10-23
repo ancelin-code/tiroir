@@ -31,6 +31,8 @@ def test_yaml_11_booleans_stay_strings(word: str) -> None:
         ("a: !!str 1\n", "tags"),
         ("a: 1\n---\nb: 2\n", "multiple documents"),
         ("a: 1\na: 2\n", "duplicate"),
+        ("%YAML 1.1\n---\na: yes\n", "directives"),
+        ("%TAG !e! tag:example.com,2000:\n---\na: 1\n", "directives"),
     ],
 )
 def test_unsupported_constructs_are_refused(text: str, message: str) -> None:
@@ -57,6 +59,18 @@ def test_syntax_error_reports_its_line() -> None:
     # Then
     assert raised.value.line is not None
     assert raised.value.line >= 2
+
+
+def test_unreadable_character_is_a_yaml_error() -> None:
+    # Given
+    text = "a: \x07\n"
+
+    # When
+    with pytest.raises(YamlError) as raised:
+        load_yaml(text)
+
+    # Then
+    assert raised.value.message == "invalid YAML"
 
 
 def test_key_line_is_one_based() -> None:

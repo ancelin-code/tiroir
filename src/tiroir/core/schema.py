@@ -12,7 +12,7 @@ needs the template file, so it belongs to the code that reads the store.
 import re
 import uuid
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from typing import Any, Literal, get_args
 
@@ -210,8 +210,8 @@ class _Checker:
             return None
         return str(value)
 
-    def slug(self, value: str, path: str, line: int | None, what: str) -> bool:
-        if _SLUG.fullmatch(value):
+    def slug(self, value: object, path: str, line: int | None, what: str) -> bool:
+        if isinstance(value, str) and _SLUG.fullmatch(value):
             return True
         self.invalid(
             path, f"expected a {what} (lowercase letters, digits, - and _)", line
@@ -287,7 +287,7 @@ def _join(path: str, key: str) -> str:
     return f"{path}.{key}" if path else key
 
 
-def _check_store(c: _Checker, root: Any, line: int | None) -> Store | None:
+def _check_store(c: _Checker, root: Any) -> Store | None:
     node = root.get("store")
     where = "store"
     line = key_line(root, "store")
@@ -445,8 +445,7 @@ def _check_field(
         return None
     field_type: FieldType = kind  # type: ignore[assignment]
     field = Field(field_type, required, values, pattern, None, description)
-    default = _check_default(c, node, path, field)
-    return Field(field_type, required, values, pattern, default, description)
+    return replace(field, default=_check_default(c, node, path, field))
 
 
 def _check_default(
@@ -521,7 +520,8 @@ def _check_path_pattern(
     if fields is None:  # a field is invalid: placeholders cannot be judged
         return
     names = _PLACEHOLDER.findall(value)
-    if _PLACEHOLDER.sub("", value).count("{") or _PLACEHOLDER.sub("", value).count("}"):
+    literal = _PLACEHOLDER.sub("", value)
+    if "{" in literal or "}" in literal:
         c.report(INVALID_PATH, path, "unbalanced brace in the path pattern", line)
     for name in names:
         if name not in fields:
@@ -564,8 +564,8 @@ def _check_drawer_type(
     label_plural = c.string(node, "label_plural", path)
     description = c.string(node, "description", path)
     pattern = c.string(node, "path", path)
-    fields = _check_fields(c, node, path, line)
-    summary = _check_summary(c, node, path, line)
+    fields = _check_fields(c, node, path)
+    summary = _check_summary(c, node, path)
     if pattern is not None:
         _check_path_pattern(c, pattern, f"{path}.path", key_line(node, "path"), fields)
     log = _check_log(c, node, path)
@@ -579,7 +579,7 @@ def _check_drawer_type(
 
 
 def _check_fields(
-    c: _Checker, node: Mapping[str, Any], path: str, line: int | None
+    c: _Checker, node: Mapping[str, Any], path: str
 ) -> dict[str, Field] | None:
     if "fields" not in node:
         return None
@@ -595,7 +595,7 @@ def _check_fields(
     for name in raw:
         field_path = f"{where}.{name}"
         name_line = key_line(raw, name)
-        ok = c.slug(str(name), field_path, name_line, "field name")
+        ok = c.slug(name, field_path, name_line, "field name")
         if name in _RESERVED_FIELDS:
             c.invalid(field_path, "reserved field name", name_line)
             ok = False
@@ -605,9 +605,7 @@ def _check_fields(
     return fields if len(fields) == len(raw) else None
 
 
-def _check_summary(
-    c: _Checker, node: Mapping[str, Any], path: str, line: int | None
-) -> Summary | None:
+def _check_summary(c: _Checker, node: Mapping[str, Any], path: str) -> Summary | None:
     if "summary" not in node:
         return None
     where = f"{path}.summary"
@@ -657,6 +655,8 @@ def _check_detect(
         return None
     names = c.string_list(raw, "names", where)
     cwd = c.string(raw, "cwd", where)
+    if fields is None:  # a field is invalid: detected types cannot be judged
+        return Detect(names, cwd)
     listed: list[tuple[str, str, int | None]] = []
     if names is not None:
         names_line = key_line(raw, "names")
@@ -667,8 +667,6 @@ def _check_detect(
     if cwd is not None:
         listed.append((f"{where}.cwd", cwd, key_line(raw, "cwd")))
     for item_path, name, line in listed:
-        if fields is None:
-            break
         field = fields.get(name)
         if field is None:
             c.invalid(item_path, "expected the name of a declared field", line)
@@ -736,7 +734,7 @@ def _check_drawer_types(c: _Checker, root: Any) -> dict[str, DrawerType] | None:
     for name in raw:
         path = f"drawer_types.{name}"
         name_line = key_line(raw, name)
-        ok = c.slug(str(name), path, name_line, "drawer type name")
+        ok = c.slug(name, path, name_line, "drawer type name")
         drawer_type = _check_drawer_type(c, raw[name], path, name_line)
         if ok and drawer_type is not None:
             types[str(name)] = drawer_type
@@ -778,7 +776,7 @@ def load_schema(text: str) -> Schema:
             c.invalid("tiroir", "expected a positive integer", key_line(root, "tiroir"))
     elif "tiroir" in root:
         c.invalid("tiroir", "expected an integer", key_line(root, "tiroir"))
-    store = _check_store(c, root, node_line(root)) if "store" in root else None
+    store = _check_store(c, root) if "store" in root else None
     shared = _check_shared(c, root)
     context = _check_context(c, root)
     drawer_types = _check_drawer_types(c, root)

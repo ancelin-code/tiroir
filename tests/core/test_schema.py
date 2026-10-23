@@ -215,6 +215,22 @@ def test_empty_text_is_invalid() -> None:
     assert raised.value.code == "schema.invalid"
 
 
+def test_non_string_names_are_invalid() -> None:
+    # Given
+    original = "      fiscal_year_end:\n        type: date\n"
+    replacement = '      1:\n        type: text\n      "1":\n        type: text\n'
+    text = fixture("valid-example.yaml").replace(original, replacement)
+
+    # When
+    with pytest.raises(CoreError) as raised:
+        load_schema(text)
+
+    # Then
+    assert [(v.code, v.path) for v in raised.value.violations] == [
+        ("schema.invalid", "drawer_types.client.fields.1"),
+    ]
+
+
 def valid_client() -> dict[str, Any]:
     return load_yaml(
         "type: client\n"
