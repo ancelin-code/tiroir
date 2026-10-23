@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import ipaddress
 import logging
 import re
 import secrets
@@ -22,6 +23,7 @@ from starlette.types import Receive, Scope, Send
 from tiroir.cli.main import main
 from tiroir.core import serverdb
 from tiroir.server.app import create_app
+from tiroir.server.auth.oauth import IPAddress
 from tiroir.server.auth.sessions import CSRF_COOKIE
 from tiroir.server.auth.verify import require_member
 
@@ -31,8 +33,12 @@ REDIRECT_URI = "http://127.0.0.1:33418/callback"
 PASSWORD = "alice's long password"
 
 
+async def _resolve(host: str) -> list[IPAddress]:
+    return [ipaddress.ip_address("93.184.215.14")]
+
+
 def _serve_documents(request: httpx.Request) -> httpx.Response:
-    if str(request.url) != CIMD_URL:
+    if f"https://{request.headers['Host']}{request.url.path}" != CIMD_URL:
         return httpx.Response(404)
     document = {
         "client_id": CIMD_URL,
@@ -58,7 +64,10 @@ class Server:
 @pytest.fixture
 def server(tmp_path: Path) -> Iterator[Server]:
     app = create_app(
-        tmp_path, origin=ORIGIN, http_transport=httpx.MockTransport(_serve_documents)
+        tmp_path,
+        origin=ORIGIN,
+        http_transport=httpx.MockTransport(_serve_documents),
+        resolver=_resolve,
     )
     app.router.routes.append(
         Route("/protected", require_member(_protected, tmp_path, ORIGIN))

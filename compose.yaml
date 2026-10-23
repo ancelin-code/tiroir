@@ -3,6 +3,10 @@ services:
     image: ghcr.io/ancelin-code/tiroir:${TIROIR_TAG:-latest}
     build: .
     restart: unless-stopped
+    environment:
+      # Only Caddy, on this stack's network, may tell tiroir a client's
+      # address (X-Forwarded-For); a request from anywhere else is taken as is.
+      TIROIR_TRUSTED_PROXIES: ${TIROIR_PROXY_SUBNET:-172.30.80.0/24}
     volumes:
       - tiroir-data:/data
 
@@ -21,6 +25,12 @@ services:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${TIROIR_PROXY_SUBNET:-172.30.80.0/24}
 
 volumes:
   tiroir-data:

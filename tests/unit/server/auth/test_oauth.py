@@ -1,8 +1,13 @@
+import ipaddress
 import json
 
 import pytest
 
-from tiroir.server.auth.oauth import client_from_document, metadata_document_url_valid
+from tiroir.server.auth.oauth import (
+    address_public,
+    client_from_document,
+    metadata_document_url_valid,
+)
 
 URL = "https://client.example/oauth/client.json"
 
@@ -11,7 +16,9 @@ URL = "https://client.example/oauth/client.json"
     ("url", "valid"),
     [
         (URL, True),
-        ("https://client.example:8443/c", True),
+        ("https://client.example:443/c", True),
+        ("https://client.example:8443/c", False),
+        ("https://client.example:80/c", False),
         ("http://client.example/c", False),
         ("https://client.example", False),
         ("https://client.example/", False),
@@ -31,6 +38,44 @@ def test_metadata_document_url_rules(url: str, valid: bool) -> None:
 
     # Then
     assert result is valid
+
+
+@pytest.mark.parametrize(
+    ("address", "public"),
+    [
+        ("93.184.215.14", True),
+        ("2606:2800:21f:cb07:6820:80da:af6b:8b2c", True),
+        ("127.0.0.1", False),
+        ("10.1.2.3", False),
+        ("172.16.0.1", False),
+        ("192.168.0.1", False),
+        ("169.254.169.254", False),
+        ("100.64.0.1", False),
+        ("224.0.0.1", False),
+        ("233.252.0.1", False),
+        ("0.0.0.0", False),
+        ("255.255.255.255", False),
+        ("::1", False),
+        ("::", False),
+        ("fe80::1", False),
+        ("fc00::1", False),
+        ("ff0e::1", False),
+        ("::ffff:127.0.0.1", False),
+        ("::ffff:93.184.215.14", False),
+        ("64:ff9b::7f00:1", False),
+        ("2002:7f00:1::1", False),
+        ("2001:0:4136:e378:8000:63bf:3fff:fdd2", False),
+    ],
+)
+def test_only_global_unicast_addresses_are_public(address: str, public: bool) -> None:
+    # Given
+    candidate = ipaddress.ip_address(address)
+
+    # When
+    result = address_public(candidate)
+
+    # Then
+    assert result is public
 
 
 def test_document_describes_a_public_client() -> None:

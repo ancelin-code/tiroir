@@ -1,9 +1,11 @@
 """The administration CLI: `tiroir admin …`, run inside the server's container."""
 
 import argparse
+import ipaddress
 import sqlite3
 from os import environ
 from pathlib import Path
+from typing import Any
 
 import uvicorn
 from loguru import logger
@@ -14,6 +16,10 @@ from tiroir.core.serverdb import Member, ServerDbError
 DEFAULT_DATA_DIR = "/data"
 PORT = 8080
 INITIAL_ADMIN_HANDLE = "admin"
+# Where a request may come from with an X-Forwarded-For uvicorn believes: the
+# Compose network that holds Caddy (`compose.yaml`), else only this container.
+TRUSTED_PROXIES_VARIABLE = "TIROIR_TRUSTED_PROXIES"
+DEFAULT_TRUSTED_PROXIES = "127.0.0.1"
 
 
 def _data_dir() -> Path:
@@ -109,7 +115,28 @@ def _members_action(conn: sqlite3.Connection, args: argparse.Namespace) -> int:
     return 0
 
 
+def trusted_proxies(value: str) -> list[str]:
+    """The networks of a comma-separated list; raises `ValueError` on anything else.
+
+    A wildcard is refused: anyone could then choose the address tiroir sees.
+    """
+    networks = [part.strip() for part in value.split(",") if part.strip()]
+    if not networks:
+        raise ValueError("no network")
+    return [str(ipaddress.ip_network(network, strict=False)) for network in networks]
+
+
+def proxy_options(proxies: list[str]) -> dict[str, Any]:
+    """Uvicorn's options that take the client's address from trusted proxies only."""
+    return {"proxy_headers": True, "forwarded_allow_ips": proxies}
+
+
 def _serve(_args: argparse.Namespace) -> int:
+    value = environ.get(TRUSTED_PROXIES_VARIABLE, DEFAULT_TRUSTED_PROXIES)
+    try:
+        proxies = trusted_proxies(value)
+    except ValueError:
+        return _error(f"{TRUSTED_PROXIES_VARIABLE} must list IP networks")
     # The application is named by string: the CLI never imports the server.
     uvicorn.run(
         "tiroir.server.app:app_from_env",
@@ -119,6 +146,7 @@ def _serve(_args: argparse.Namespace) -> int:
         workers=1,
         log_config=None,
         access_log=False,
+        **proxy_options(proxies),
     )
     return 0
 

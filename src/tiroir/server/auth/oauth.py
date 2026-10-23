@@ -11,14 +11,17 @@ import asyncio
 import base64
 import binascii
 import hmac
+import ipaddress
 import json
 import secrets
+import socket
 import sqlite3
 import time
 import uuid
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable
 from contextlib import closing
+from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import override
@@ -64,7 +67,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Route, request_response
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from tiroir.core import serverdb
 from tiroir.core.serverdb import (
@@ -75,6 +78,7 @@ from tiroir.core.serverdb import (
     open_server_db,
     secret_digest,
 )
+from tiroir.server.auth.sessions import SlidingWindow
 from tiroir.server.auth.verify import (
     MCP_PATH,
     RESOURCE_METADATA_PATH,
@@ -96,19 +100,37 @@ DOCUMENT_TIMEOUT_SECONDS = 5.0
 DOCUMENT_CACHE_SECONDS = 3600
 DOCUMENT_FAILURE_CACHE_SECONDS = 60
 DOCUMENT_CACHE_SIZE = 256
+DOCUMENT_PORT = 443
+# Fetches of documents not in the cache, per client address: a client cannot
+# make tiroir spend its time limit on new URLs without bound.
+DOCUMENT_FETCHES_PER_ADDRESS = 10
+DOCUMENT_FETCH_WINDOW_SECONDS = 60
+
+type IPAddress = ipaddress.IPv4Address | ipaddress.IPv6Address
+type Resolver = Callable[[str], Awaitable[list[IPAddress]]]
+
+# IPv6 prefixes that carry an IPv4 address `is_global` does not look into.
+_EMBEDDING_IPV4 = (
+    ipaddress.IPv6Network("64:ff9b::/96"),  # NAT64
+    ipaddress.IPv6Network("64:ff9b:1::/48"),  # local NAT64
+)
+
+# The address of the client whose request is being handled, set by `limited`.
+_requester: ContextVar[str] = ContextVar("requester", default="")
 
 
 def metadata_document_url_valid(url: str) -> bool:
-    """Whether `url` may name a client: HTTPS, a path, no credentials or dots."""
+    """Whether `url` may name a client: HTTPS on 443, a path, no credentials or dots."""
     try:
         parts = urlsplit(url)
-        parts.port  # noqa: B018 - raises on an invalid port
+        port = parts.port
     except ValueError:
         return False
     segments = parts.path.split("/")
     return (
         parts.scheme == "https"
         and bool(parts.hostname)
+        and port in (None, DOCUMENT_PORT)
         and parts.username is None
         and parts.password is None
         and not parts.fragment
@@ -116,6 +138,36 @@ def metadata_document_url_valid(url: str) -> bool:
         and "." not in segments
         and ".." not in segments
     )
+
+
+def address_public(address: IPAddress) -> bool:
+    """Whether tiroir may connect to `address`: a global unicast address only.
+
+    Refuses loopback, private, link-local, shared (CGNAT), multicast, reserved
+    and unspecified addresses, and IPv6 addresses that embed an IPv4 one.
+    """
+    if isinstance(address, ipaddress.IPv6Address) and (
+        address.ipv4_mapped is not None
+        or address.sixtofour is not None
+        or address.teredo is not None
+        or any(address in network for network in _EMBEDDING_IPV4)
+    ):
+        return False
+    return address.is_global and not (
+        address.is_multicast
+        or address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_reserved
+        or address.is_unspecified
+    )
+
+
+async def resolve(host: str) -> list[IPAddress]:
+    """The addresses `host` resolves to, through the system's resolver."""
+    loop = asyncio.get_running_loop()
+    infos = await loop.getaddrinfo(host, DOCUMENT_PORT, type=socket.SOCK_STREAM)
+    return [ipaddress.ip_address(info[4][0]) for info in infos]
 
 
 def client_from_document(url: str, body: bytes) -> OAuthClientInformationFull | None:
@@ -141,18 +193,35 @@ def client_from_document(url: str, body: bytes) -> OAuthClientInformationFull | 
 class ClientMetadataDocuments:
     """Clients named by the URL of their metadata document, fetched and cached."""
 
-    def __init__(self, transport: httpx.AsyncBaseTransport | None = None) -> None:
+    def __init__(
+        self,
+        transport: httpx.AsyncBaseTransport | None = None,
+        resolver: Resolver = resolve,
+    ) -> None:
         self._transport = transport
+        self._resolve = resolver
         self._cache: OrderedDict[
             str, tuple[float, OAuthClientInformationFull | None]
         ] = OrderedDict()
+        self._fetches = SlidingWindow(
+            DOCUMENT_FETCHES_PER_ADDRESS, DOCUMENT_FETCH_WINDOW_SECONDS
+        )
 
     async def get(self, url: str) -> OAuthClientInformationFull | None:
+        """The client `url` names, from the cache or fetched; `None` if refused."""
         now = time.monotonic()
         cached = self._cache.get(url)
         if cached is not None and cached[0] > now:
             return cached[1]
-        client = await self._fetch(url) if metadata_document_url_valid(url) else None
+        if not metadata_document_url_valid(url):
+            client = None
+        else:
+            requester = _requester.get()
+            if self._fetches.full(requester):
+                logger.warning("client metadata document fetches throttled")
+                return None  # not cached: the document itself is not at fault
+            self._fetches.record(requester)
+            client = await self._fetch(url)
         lifetime = DOCUMENT_CACHE_SECONDS if client else DOCUMENT_FAILURE_CACHE_SECONDS
         self._cache[url] = (now + lifetime, client)
         self._cache.move_to_end(url)
@@ -163,22 +232,44 @@ class ClientMetadataDocuments:
     async def _fetch(self, url: str) -> OAuthClientInformationFull | None:
         try:
             async with asyncio.timeout(DOCUMENT_TIMEOUT_SECONDS):
-                body = await self._download(url)
-        except (httpx.HTTPError, TimeoutError):
+                address = await self._public_address(urlsplit(url).hostname or "")
+                body = None if address is None else await self._download(url, address)
+        except (httpx.HTTPError, OSError, TimeoutError, ValueError):
             body = None
         client = None if body is None else client_from_document(url, body)
         if client is None:
             logger.warning("client metadata document refused: {}", url)
         return client
 
-    async def _download(self, url: str) -> bytes | None:
+    async def _public_address(self, host: str) -> IPAddress | None:
+        """The address to connect to for `host`, if every one it has is public."""
+        try:
+            addresses = [ipaddress.ip_address(host)]
+        except ValueError:
+            addresses = await self._resolve(host)
+        if not addresses or not all(address_public(a) for a in addresses):
+            return None
+        return addresses[0]
+
+    async def _download(self, url: str, address: IPAddress) -> bytes | None:
+        # Connect to the address that was checked, so that a second resolution
+        # cannot swap it; the name still goes in the Host header and in SNI,
+        # against which the certificate is verified.
+        host = urlsplit(url).hostname or ""
+        target = httpx.URL(url).copy_with(host=str(address))
         async with (
             httpx.AsyncClient(
                 transport=self._transport,
                 follow_redirects=False,
                 timeout=DOCUMENT_TIMEOUT_SECONDS,
+                trust_env=False,
             ) as http,
-            http.stream("GET", url, headers={"Accept": "application/json"}) as answer,
+            http.stream(
+                "GET",
+                target,
+                headers={"Accept": "application/json", "Host": host},
+                extensions={"sni_hostname": host},
+            ) as answer,
         ):
             if answer.status_code != 200:
                 return None
@@ -476,10 +567,30 @@ class HashedSecretAuthenticator(ClientAuthenticator):
         return client
 
 
+class RecordRequester:
+    """Make the client's address known to the fetches of metadata documents."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        client = scope.get("client")
+        token = _requester.set(client[0] if client else "")
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            _requester.reset(token)
+
+
 def limited(handler: Callable[[Request], Awaitable[Response]]) -> ASGIApp:
-    """An endpoint whose request body is capped, as the SDK caps its own."""
-    return RequestBodyLimitMiddleware(
-        request_response(handler), DEFAULT_MAX_REQUEST_BODY_SIZE
+    """An endpoint whose request body is capped, as the SDK caps its own.
+
+    It also records the client's address, which limits its document fetches.
+    """
+    return RecordRequester(
+        RequestBodyLimitMiddleware(
+            request_response(handler), DEFAULT_MAX_REQUEST_BODY_SIZE
+        )
     )
 
 

@@ -10,7 +10,7 @@ import hmac
 import secrets
 import time
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Hashable
 from contextlib import closing
 from pathlib import Path
 
@@ -25,8 +25,10 @@ CSRF_COOKIE = "__Host-tiroir_csrf"
 SESSION_SECONDS = 12 * 3600
 
 THROTTLE_SECONDS = 60
-FAILURES_PER_HANDLE = 10
+FAILURES_PER_HANDLE = 10  # from one address
 FAILURES_PER_ADDRESS = 30
+HANDLE_DELAY_STEP_SECONDS = 0.25
+HANDLE_DELAY_MAX_SECONDS = 5.0
 
 
 def _set_cookie(response: Response, name: str, value: str) -> None:
@@ -105,9 +107,9 @@ class SlidingWindow:
         self.limit = limit
         self.seconds = seconds
         self.clock = clock
-        self._events: dict[str, deque[float]] = {}
+        self._events: dict[Hashable, deque[float]] = {}
 
-    def _recent(self, key: str) -> deque[float]:
+    def _recent(self, key: Hashable) -> deque[float]:
         events = self._events.get(key, deque[float]())
         horizon = self.clock() - self.seconds
         while events and events[0] <= horizon:
@@ -116,10 +118,13 @@ class SlidingWindow:
             self._events.pop(key, None)
         return events
 
-    def full(self, key: str) -> bool:
-        return len(self._recent(key)) >= self.limit
+    def count(self, key: Hashable) -> int:
+        return len(self._recent(key))
 
-    def record(self, key: str) -> None:
+    def full(self, key: Hashable) -> bool:
+        return self.count(key) >= self.limit
+
+    def record(self, key: Hashable) -> None:
         events = self._recent(key)
         events.append(self.clock())
         self._events[key] = events
@@ -129,15 +134,29 @@ class SlidingWindow:
 
 
 class SignInThrottle:
-    """Refuse sign-ins after repeated failures, per handle and per address."""
+    """Refuse an address after repeated failures; slow down a handle under attack.
+
+    An address is refused after 10 failures on one handle, or 30 in all, within
+    a minute. Failures on a handle from every address together only delay its
+    sign-ins, so that nobody can lock a member out by failing on purpose.
+    """
 
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
-        self.handles = SlidingWindow(FAILURES_PER_HANDLE, THROTTLE_SECONDS, clock)
+        self.attempts = SlidingWindow(FAILURES_PER_HANDLE, THROTTLE_SECONDS, clock)
         self.addresses = SlidingWindow(FAILURES_PER_ADDRESS, THROTTLE_SECONDS, clock)
+        self.handles = SlidingWindow(FAILURES_PER_HANDLE, THROTTLE_SECONDS, clock)
 
     def blocked(self, handle: str, address: str) -> bool:
-        return self.handles.full(handle) or self.addresses.full(address)
+        return self.attempts.full((handle, address)) or self.addresses.full(address)
+
+    def delay(self, handle: str) -> float:
+        """Seconds to wait before checking a password for `handle`."""
+        excess = self.handles.count(handle) - FAILURES_PER_HANDLE + 1
+        if excess <= 0:
+            return 0.0
+        return min(HANDLE_DELAY_MAX_SECONDS, HANDLE_DELAY_STEP_SECONDS * excess)
 
     def failed(self, handle: str, address: str) -> None:
-        self.handles.record(handle)
+        self.attempts.record((handle, address))
         self.addresses.record(address)
+        self.handles.record(handle)

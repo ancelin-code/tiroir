@@ -18,8 +18,10 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from tiroir.core.serverdb import open_server_db
 from tiroir.server.auth.oauth import (
     ClientMetadataDocuments,
+    Resolver,
     TiroirProvider,
     oauth_routes,
+    resolve,
 )
 from tiroir.server.auth.pages import page_routes
 from tiroir.server.logging import configure_logging
@@ -71,16 +73,19 @@ def create_app(
     *,
     origin: str = f"https://{DEFAULT_DOMAIN}",
     http_transport: httpx.AsyncBaseTransport | None = None,
+    resolver: Resolver = resolve,
 ) -> Starlette:
     """Build the application on a data directory, served at `origin`.
 
     The core facade arrives with the stores (server-003); until then the
     data directory is the only thing the server needs. `origin` is the public
     address behind Caddy, the OAuth issuer; `http_transport` carries the
-    fetches of client metadata documents (a test serves its own).
+    fetches of client metadata documents and `resolver` resolves their host
+    names (a test serves its own).
     """
     data_dir = Path(core_or_data_dir)
-    provider = TiroirProvider(data_dir, origin, ClientMetadataDocuments(http_transport))
+    documents = ClientMetadataDocuments(http_transport, resolver)
+    provider = TiroirProvider(data_dir, origin, documents)
 
     @asynccontextmanager
     async def lifespan(app: Starlette) -> AsyncIterator[None]:

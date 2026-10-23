@@ -5,6 +5,7 @@ a strict Content-Security-Policy. The authorization endpoint lives here: the
 SDK validates a client's request, then the member signs in and consents.
 """
 
+import asyncio
 import re
 from typing import Any
 from urllib.parse import urlencode, urlsplit
@@ -123,11 +124,14 @@ class Pages:
             )
         if "new_password" in form:
             return self._change_password(request, form, next_path)
-        return self._sign_in(request, form, next_path)
+        return await self._sign_in(request, form, next_path)
 
-    def _sign_in(self, request: Request, form: FormData, next_path: str) -> Response:
+    async def _sign_in(
+        self, request: Request, form: FormData, next_path: str
+    ) -> Response:
         handle = str(form.get("handle", "")).strip()
         password = str(form.get("password", ""))
+        # The browser's address: uvicorn reads it from Caddy's X-Forwarded-For.
         address = request.client.host if request.client else ""
         if self.throttle.blocked(handle, address):
             logger.warning("sign-in throttled")
@@ -135,6 +139,7 @@ class Pages:
             return _page(
                 request, "signin.html", {"next": next_path, "error": error}, 429
             )
+        await asyncio.sleep(self.throttle.delay(handle))
         with self.provider.connect() as conn:
             member = serverdb.authenticate(conn, handle, password)
         if member is None:

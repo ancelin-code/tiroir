@@ -1,11 +1,15 @@
 from collections.abc import Iterator
 from contextlib import closing
 from pathlib import Path
+from typing import cast
 
 import httpx2  # the HTTP client of Starlette's TestClient
 import pytest
+import uvicorn
 from starlette.testclient import TestClient
+from starlette.types import ASGIApp
 
+from tiroir.cli.admin import proxy_options, trusted_proxies
 from tiroir.core import serverdb
 from tiroir.server.app import create_app
 from tiroir.server.auth.sessions import CSRF_COOKIE, SESSION_COOKIE
@@ -13,6 +17,7 @@ from tiroir.server.auth.sessions import CSRF_COOKIE, SESSION_COOKIE
 ORIGIN = "https://testserver"
 INITIAL = "initial-password"
 CHOSEN = "my own long password"
+CADDY = "172.30.80.2"  # on the Compose network tiroir trusts
 
 
 @pytest.fixture
@@ -30,9 +35,14 @@ def client(data_dir: Path) -> Iterator[TestClient]:
 
 
 def _sign_in(
-    client: TestClient, password: str, handle: str = "alice", next_path: str = "/x"
+    client: TestClient,
+    password: str,
+    handle: str = "alice",
+    next_path: str = "/x",
+    forwarded_for: str | None = None,
 ) -> httpx2.Response:
-    client.get("/signin")
+    headers = {} if forwarded_for is None else {"X-Forwarded-For": forwarded_for}
+    client.get("/signin", headers=headers)
     return client.post(
         "/signin",
         data={
@@ -41,6 +51,32 @@ def _sign_in(
             "password": password,
             "next": next_path,
         },
+        headers=headers,
+    )
+
+
+@pytest.fixture
+def served(data_dir: Path) -> uvicorn.Config:
+    """The application as `tiroir admin serve` runs it, behind the Compose proxy."""
+    config = uvicorn.Config(
+        create_app(data_dir, origin=ORIGIN),
+        log_config=None,
+        **proxy_options(trusted_proxies("172.30.80.0/24")),
+    )
+    config.load()
+    with closing(serverdb.open_server_db(data_dir)) as conn:
+        serverdb.create_member(
+            conn, "alice", "Alice", CHOSEN, must_change_password=False
+        )
+    return config
+
+
+def _from(config: uvicorn.Config, peer: str) -> TestClient:
+    return TestClient(
+        cast(ASGIApp, config.loaded_app),
+        base_url=ORIGIN,
+        follow_redirects=False,
+        client=(peer, 1),
     )
 
 
@@ -177,6 +213,60 @@ def test_nine_failures_do_not_throttle(client: TestClient) -> None:
 
     # Then
     assert answer.status_code == 303
+
+
+def test_failures_from_one_address_do_not_block_another(
+    served: uvicorn.Config,
+) -> None:
+    # Given
+    with _from(served, CADDY) as caddy:
+        for index in range(30):
+            _sign_in(caddy, "wrong", f"member{index}", forwarded_for="198.51.100.1")
+        blocked = _sign_in(caddy, CHOSEN, forwarded_for="198.51.100.1")
+        caddy.cookies.clear()
+
+        # When
+        answer = _sign_in(caddy, CHOSEN, forwarded_for="198.51.100.2")
+
+    # Then
+    assert blocked.status_code == 429
+    assert answer.status_code == 303
+
+
+def test_forwarded_for_from_an_untrusted_peer_is_ignored(
+    served: uvicorn.Config,
+) -> None:
+    # Given
+    with _from(served, "203.0.113.7") as outsider:
+        for index in range(30):
+            _sign_in(
+                outsider, "wrong", f"member{index}", forwarded_for=f"10.0.0.{index}"
+            )
+
+        # When
+        answer = _sign_in(outsider, CHOSEN, forwarded_for="10.0.0.99")
+
+    # Then
+    assert answer.status_code == 429
+
+
+def test_member_signs_in_while_an_attacker_on_the_handle_is_throttled(
+    served: uvicorn.Config,
+) -> None:
+    # Given
+    with _from(served, CADDY) as attacker, _from(served, CADDY) as alice:
+        for _ in range(10):
+            _sign_in(attacker, "guess", forwarded_for="198.51.100.66")
+        throttled = _sign_in(attacker, CHOSEN, forwarded_for="198.51.100.66")
+
+        # When
+        answer = _sign_in(alice, CHOSEN, forwarded_for="192.0.2.10")
+
+    # Then
+    assert throttled.status_code == 429
+    assert SESSION_COOKIE not in attacker.cookies
+    assert answer.status_code == 303
+    assert SESSION_COOKIE in alice.cookies
 
 
 def test_sign_in_without_csrf_token_is_refused(client: TestClient) -> None:
