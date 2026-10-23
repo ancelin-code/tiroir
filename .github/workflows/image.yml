@@ -43,17 +43,29 @@ jobs:
           provenance: mode=max
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      # Gives the `run` step below the cache token, so it reuses the build.
-      - uses: crazy-max/ghaction-github-runtime@v3
+      # One archive per architecture, with gzip layers: its size is the size a
+      # registry stores. The layers come from the build cache of the step above.
+      - name: Export the amd64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          outputs: type=oci,dest=amd64.tar,compression=gzip
+          cache-from: type=gha
+      - name: Export the arm64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          outputs: type=oci,dest=arm64.tar,compression=gzip
+          cache-from: type=gha
       - name: Check the compressed size of each architecture
         run: |
           set -eu
-          for platform in linux/amd64 linux/arm64; do
-            docker buildx build --platform "$platform" --cache-from type=gha \
-              --output "type=docker,dest=image.tar,compression=gzip" .
-            size=$(wc -c < image.tar)
+          for platform in amd64 arm64; do
+            size=$(wc -c < "$platform.tar")
             echo "$platform: $size bytes compressed"
-            [ "$size" -le "$MAX_COMPRESSED_BYTES" ] || { echo "image exceeds 600 MB"; exit 1; }
+            [ "$size" -le "$MAX_COMPRESSED_BYTES" ] || { echo "$platform exceeds 600 MB"; exit 1; }
           done
       - uses: actions/attest-build-provenance@v2
         if: github.ref_type == 'tag'
