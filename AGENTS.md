@@ -21,8 +21,8 @@ exception is user-facing memory content, whose language is a store setting
 
 Tests are either unit or integration tests, and live in the matching folder:
 
-- `tests/unit/`: pure logic, with no filesystem, SQLite, Git, network or
-  subprocess. Mirrors `src/tiroir/`, one file per module:
+- `tests/unit/`: pure logic, with no SQLite, Git, network or subprocess, and
+  nothing written to disk (reading a fixture file kept under `tests/` is fine). Mirrors `src/tiroir/`, one file per module:
   `src/tiroir/core/layout.py` is tested by `tests/unit/core/test_layout.py`.
   They are fast: `mise run test:unit`.
 - `tests/integration/`: anything that touches the real thing: SQLite, bare Git
@@ -65,3 +65,10 @@ stderr, set up by `tiroir.cli.main.setup_logging`). Never log memory content
 The `tiroir` command is parsed with `argparse` (ADR-002), one sub-parser per
 command group of [the CLI contract](delivery/contracts/cli.md). No other
 argument parsing library.
+
+## Docstrings
+
+Give functions, methods and classes a docstring of one or two lines that says
+what they are for and, where it is not obvious, what they return or raise.
+Skip it only where the name and signature already say everything (a test, a
+dunder method, a one-line accessor).
