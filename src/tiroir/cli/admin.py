@@ -2,11 +2,11 @@
 
 import argparse
 import sqlite3
-import sys
 from os import environ
 from pathlib import Path
 
 import uvicorn
+from loguru import logger
 
 from tiroir.core import serverdb
 from tiroir.core.serverdb import Member, ServerDbError
@@ -21,7 +21,7 @@ def _data_dir() -> Path:
 
 
 def _error(message: str) -> int:
-    print(f"error: {message}", file=sys.stderr)
+    logger.error(f"error: {message}")
     return 1
 
 
@@ -52,8 +52,10 @@ def _init(_args: argparse.Namespace) -> int:
         return _error(_describe(error, INITIAL_ADMIN_HANDLE))
     finally:
         conn.close()
-    print(f"administrator: {INITIAL_ADMIN_HANDLE}")
-    print(f"initial password (shown once, to change at first sign-in): {password}")
+    logger.info(f"administrator: {INITIAL_ADMIN_HANDLE}")
+    logger.info(
+        f"initial password (shown once, to change at first sign-in): {password}"
+    )
     return 0
 
 
@@ -64,7 +66,7 @@ def _print_member(member: Member) -> None:
     if member.disabled is not None:
         flags.append("disabled")
     suffix = f"  [{', '.join(flags)}]" if flags else ""
-    print(f"{member.handle}\t{member.display_name}{suffix}")
+    logger.info(f"{member.handle}\t{member.display_name}{suffix}")
 
 
 def _members(args: argparse.Namespace) -> int:
@@ -88,18 +90,20 @@ def _members_action(conn: sqlite3.Connection, args: argparse.Namespace) -> int:
             serverdb.create_member(
                 conn, handle, args.name, password, is_admin=args.admin
             )
-            print(f"member: {handle}")
-            print(
+            logger.info(f"member: {handle}")
+            logger.info(
                 f"initial password (shown once, to change at first sign-in): {password}"
             )
         elif action == "disable":
             serverdb.disable_member(conn, handle)
-            print(f"{handle}: disabled")
+            logger.info(f"{handle}: disabled")
         else:  # reset-password
             password = serverdb.generate_password()
             serverdb.reset_password(conn, handle, password)
-            print(f"{handle}: new password (shown once, to change at next sign-in)")
-            print(password)
+            logger.info(
+                f"{handle}: new password (shown once, to change at next sign-in)"
+            )
+            logger.info(password)
     except ServerDbError as error:
         return _error(_describe(error, handle))
     return 0
