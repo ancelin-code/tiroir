@@ -2,6 +2,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from loguru import logger
 
 from tiroir.core import serverdb
 
@@ -38,6 +39,53 @@ def test_old_database_at_version_zero_gets_missing_migrations(tmp_path: Path) ->
     version = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()[0]
     assert version == len(serverdb.MIGRATIONS)
     assert serverdb.list_members(conn) == []
+
+
+def _database_at(path: Path, version: int) -> None:
+    old = sqlite3.connect(path / serverdb.DB_NAME)
+    old.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
+    old.execute("INSERT INTO schema_version (version) VALUES (?)", (version,))
+    old.commit()
+    old.close()
+
+
+def test_database_newer_than_the_code_is_opened_with_one_warning(
+    tmp_path: Path,
+) -> None:
+    # Given
+    newer = len(serverdb.MIGRATIONS) + 5
+    _database_at(tmp_path, newer)
+    warnings: list[str] = []
+    sink = logger.add(lambda m: warnings.append(str(m)), level="WARNING")
+
+    # When
+    try:
+        serverdb.open_server_db(tmp_path).close()
+        conn = serverdb.open_server_db(tmp_path)
+    finally:
+        logger.remove(sink)
+
+    # Then
+    version = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()[0]
+    assert version == newer
+    assert len(warnings) == 1
+    assert f"version {newer}" in warnings[0]
+
+
+def test_database_at_the_latest_version_gives_no_warning(tmp_path: Path) -> None:
+    # Given
+    _database_at(tmp_path, len(serverdb.MIGRATIONS))
+    warnings: list[str] = []
+    sink = logger.add(lambda m: warnings.append(str(m)), level="WARNING")
+
+    # When
+    try:
+        serverdb.open_server_db(tmp_path).close()
+    finally:
+        logger.remove(sink)
+
+    # Then
+    assert warnings == []
 
 
 def test_migrations_apply_in_order_and_only_once() -> None:

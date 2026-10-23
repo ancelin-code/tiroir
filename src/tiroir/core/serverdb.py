@@ -92,8 +92,28 @@ def _current_version(conn: sqlite3.Connection) -> int:
     return int(row[0] or 0)
 
 
+# Databases already reported as newer than this code, so that a server opening
+# one per request warns once, not on every request.
+_WARNED_NEWER: set[tuple[Path, int]] = set()
+
+
+def _warn_if_newer(path: Path, version: int, known: int) -> None:
+    """Warn, once per database and version, that it is newer than this code."""
+    if version > known and (path, version) not in _WARNED_NEWER:
+        _WARNED_NEWER.add((path, version))
+        logger.warning(
+            "server database is at version {} but this tiroir only knows version {}:"
+            " it is used as is, upgrade tiroir before relying on it",
+            version,
+            known,
+        )
+
+
 def migrate(conn: sqlite3.Connection, migrations: Sequence[str] = MIGRATIONS) -> int:
-    """Apply the missing migrations in order, one transaction each."""
+    """Apply the missing migrations in order, one transaction each.
+
+    A database newer than the migrations is left as it is.
+    """
     version = _current_version(conn)
     for target in range(version + 1, len(migrations) + 1):
         # One script, so that a failure rolls the migration and its version
@@ -115,12 +135,16 @@ def migrate(conn: sqlite3.Connection, migrations: Sequence[str] = MIGRATIONS) ->
 
 
 def open_server_db(data_dir: Path | str) -> sqlite3.Connection:
-    """Open `<data>/server.db`, creating it and applying missing migrations."""
+    """Open `<data>/server.db`, creating it and applying missing migrations.
+
+    A database newer than this code is opened anyway, with a warning.
+    """
     directory = Path(data_dir)
     directory.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(directory / DB_NAME, isolation_level=None)
+    path = directory / DB_NAME
+    conn = sqlite3.connect(path, isolation_level=None)
     conn.execute("PRAGMA foreign_keys = ON")
-    migrate(conn)
+    _warn_if_newer(path.resolve(), migrate(conn), len(MIGRATIONS))
     return conn
 
 
