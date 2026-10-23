@@ -10,7 +10,7 @@ fiscal_year_end: 2025-12-31
 
 ## Identité
 
-SCI, SIREN 343 163 500. Activité : location de deux immeubles. Siège : 7 impasse du Vieux Pressoir, 31000 Toulouse.
+SCI, SIREN 343 163 500. Activité : location de deux immeubles. Siège : 7 impasse du Pressoir Somnolent, 31000 Toulouse.
 
 ## Régime fiscal
 

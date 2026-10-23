@@ -1,7 +1,7 @@
 """Shape and content of the accounting-firm preset and its synthetic dataset."""
 
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -155,9 +155,14 @@ def test_every_summary_matches_the_schema(client_type: dict[str, Any]) -> None:
             problems.append(f"{path}: folder does not match the code")
         if meta.get("legal_form") not in fields["legal_form"]["values"]:
             problems.append(f"{path}: legal_form")
-        if not isinstance(meta.get("fiscal_year_end"), date):
+        if not isinstance(meta.get("name"), str):
+            problems.append(f"{path}: name")
+        if type(meta.get("fiscal_year_end")) is not date:
             problems.append(f"{path}: fiscal_year_end")
-        if not isinstance(meta.get("aliases"), list):
+        aliases = meta.get("aliases")
+        if not isinstance(aliases, list) or not all(
+            isinstance(a, str) for a in aliases
+        ):
             problems.append(f"{path}: aliases")
         if re.findall(r"^## (.+)$", body, re.MULTILINE) != sections:
             problems.append(f"{path}: sections")
@@ -202,6 +207,8 @@ def test_every_log_entry_is_valid_and_filed_by_date() -> None:
         if set(meta) != {"date", "author"} or not isinstance(stamp, datetime):
             problems.append(f"{path}: frontmatter")
             continue
+        if stamp.utcoffset() != timedelta(0):
+            problems.append(f"{path}: date is not UTC")
         years.add(stamp.year)
         if name is None:
             problems.append(f"{path}: file name")
@@ -263,10 +270,9 @@ def test_data_has_accented_surnames_and_inflections() -> None:
 def test_no_siren_is_a_valid_registered_number() -> None:
     # Given
     sirens = {s.replace(" ", "") for s in SIREN.findall(all_data_text())}
-    sirens -= {n.replace("-", "") for n in INVOICE.findall(all_data_text())}
 
     # When
-    valid = [s for s in sirens if len(s) == 9 and luhn_valid(s)]
+    valid = [s for s in sirens if luhn_valid(s)]
 
     # Then
     assert sirens
@@ -275,7 +281,7 @@ def test_no_siren_is_a_valid_registered_number() -> None:
 
 def test_every_email_uses_the_reserved_domain() -> None:
     # Given
-    text = all_data_text() + (PRESET / "shared" / "conventions.md").read_text("utf-8")
+    text = "\n".join(p.read_text(encoding="utf-8") for p in PRESET.rglob("*.md"))
 
     # When
     foreign = [e for e in EMAIL.findall(text) if not e.endswith("@example.fr")]
