@@ -1,0 +1,50 @@
+tiroir: 1
+
+store:
+  id: 7c1d4a62-3e5b-4f08-9a17-d2b6c8e0f413
+  name: cabinet-exemple
+  audience: team
+  language: fr
+  description: "Mémoire du cabinet, un tiroir par client."
+
+shared:
+  path: shared
+  topics: [procédures, modèles de lettres, calendrier fiscal]
+  conventions: shared/conventions.md
+
+drawer_types:
+  client:
+    label: Client
+    label_plural: Clients
+    description: "Un client du cabinet, identifié par son code."
+    path: "clients/{code}"
+    fields:
+      code:
+        type: text
+        required: true
+        pattern: "C[0-9]{3}"
+        description: "Code client, par exemple C042."
+      name:
+        type: text
+        required: true
+        description: "Raison sociale ou nom usuel du client."
+      aliases:
+        type: list
+        description: "Autres noms sous lesquels le client est désigné."
+      legal_form:
+        type: enum
+        values: [EI, SARL, SAS, SCI, Association]
+        description: "Forme juridique du client."
+      fiscal_year_end:
+        type: date
+        description: "Date de clôture du dernier exercice, au format AAAA-MM-JJ."
+    summary:
+      template: templates/client-summary.md
+      sections: [Identité, Régime fiscal, Missions, Contacts, Points d'attention, Échéances]
+    log:
+      template: templates/client-log.md
+    detect:
+      names: [code, name, aliases]
+    inject:
+      sections: [Identité, Points d'attention, Échéances]
+      max_tokens: 800

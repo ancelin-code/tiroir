@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 
 def _below_warning(record: "Record") -> bool:
+    """Whether the record goes to stdout (INFO and below)."""
     return record["level"].no < logger.level("WARNING").no
 
 
@@ -40,6 +41,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the `tiroir` command with `argv` and return its exit code."""
     setup_logging()
     parser = _parser()
     try:
