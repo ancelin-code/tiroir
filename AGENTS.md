@@ -44,3 +44,9 @@ def test_unknown_argument_fails(capsys: pytest.CaptureFixture[str]) -> None:
 No `print` outside `src/tiroir/cli/`, where it shows the command's results
 (ruff `T20` enforces it). Everything else uses `from loguru import logger`.
 Never log memory content (Y5): identifiers, codes and counts only.
+
+## Command line
+
+The `tiroir` command is parsed with `argparse` (ADR-002), one sub-parser per
+command group of [the CLI contract](delivery/contracts/cli.md). No other
+argument parsing library.
