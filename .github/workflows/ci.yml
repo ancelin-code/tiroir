@@ -17,3 +17,5 @@ jobs:
       - run: mise run check
       - name: Audit locked dependencies
         run: uv export --frozen --no-emit-project -o /tmp/requirements.txt && uvx pip-audit --disable-pip --no-deps -r /tmp/requirements.txt
+      - name: Check the licences of the locked dependencies
+        run: mise run licenses
