@@ -4,6 +4,8 @@ services:
     build: .
     restart: unless-stopped
     environment:
+      # The public origin, https:// and this domain, is the OAuth issuer.
+      TIROIR_DOMAIN: ${TIROIR_DOMAIN:?set TIROIR_DOMAIN in .env}
       # Only Caddy, on this stack's network, may tell tiroir a client's
       # address (X-Forwarded-For); a request from anywhere else is taken as is.
       TIROIR_TRUSTED_PROXIES: ${TIROIR_PROXY_SUBNET:-172.30.80.0/24}

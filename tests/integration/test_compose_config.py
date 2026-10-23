@@ -123,3 +123,17 @@ def test_tiroir_trusts_forwarded_addresses_from_the_stack_network_only() -> None
     assert subnets == [trusted]
     assert trusted.startswith("${TIROIR_PROXY_SUBNET:-")
     assert "*" not in trusted
+
+
+def test_tiroir_knows_its_public_domain() -> None:
+    # Given
+    compose = _compose()
+
+    # When
+    environment = compose["services"]["tiroir"]["environment"]
+
+    # Then
+    assert (
+        environment["TIROIR_DOMAIN"]
+        == compose["services"]["caddy"]["environment"]["TIROIR_DOMAIN"]
+    )
