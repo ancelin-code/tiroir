@@ -123,13 +123,14 @@ def _serve(_args: argparse.Namespace) -> int:
     return 0
 
 
-def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="tiroir admin")
-    commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("init", help="create the first administrator").set_defaults(
-        run=_init
-    )
-    members = commands.add_parser("members", help="list and change members")
+def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+    """Add `tiroir admin …` to the command line's sub-commands."""
+    admin = commands.add_parser("admin", help="administer this server")
+    admin_commands = admin.add_subparsers(dest="admin_command", required=True)
+    admin_commands.add_parser(
+        "init", help="create the first administrator"
+    ).set_defaults(run=_init)
+    members = admin_commands.add_parser("members", help="list and change members")
     members.set_defaults(run=_members)
     actions = members.add_subparsers(dest="action")
     actions.add_parser("list")
@@ -139,13 +140,4 @@ def _parser() -> argparse.ArgumentParser:
     add.add_argument("--admin", action="store_true")
     actions.add_parser("disable").add_argument("handle")
     actions.add_parser("reset-password").add_argument("handle")
-    commands.add_parser("serve", help="run the server").set_defaults(run=_serve)
-    return parser
-
-
-def run(argv: list[str]) -> int:
-    try:
-        args = _parser().parse_args(argv)
-    except SystemExit as exit_:  # argparse: 0 after --help, 2 on a usage error
-        return int(exit_.code or 0)
-    return int(args.run(args))
+    admin_commands.add_parser("serve", help="run the server").set_defaults(run=_serve)
