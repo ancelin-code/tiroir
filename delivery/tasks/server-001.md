@@ -50,8 +50,8 @@ Files this task is expected to touch:
   worker, port 8080, data dir from `TIROIR_DATA`, default `/data`), as in the
   [CLI contract](../contracts/cli.md)
 - `src/tiroir/cli/main.py`: dispatch to `admin`
-- `tests/core/test_serverdb.py`, `tests/server/test_health.py`,
-  `tests/cli/test_admin_members.py`
+- `tests/integration/test_serverdb.py`, `tests/integration/test_health.py`,
+  `tests/integration/test_admin_members.py`
 
 Out of scope:
 
@@ -78,6 +78,6 @@ Out of scope:
 
 ## Validation
 
-`mise run test -- tests/core/test_serverdb.py tests/server tests/cli`, then
+`mise run test -- tests/integration`, then
 `mise run check`, then `uv run tiroir admin serve` and `curl
 localhost:8080/health`.
