@@ -23,6 +23,7 @@ def _segment_bounds(segment: str) -> tuple[str, str] | None:
 
 
 def _literal_fits(literal: str, bounds: tuple[str, str]) -> bool:
+    """Whether `literal` could be produced by a segment with these bounds."""
     head, tail = bounds
     return (
         len(literal) >= len(head) + len(tail)
@@ -32,6 +33,7 @@ def _literal_fits(literal: str, bounds: tuple[str, str]) -> bool:
 
 
 def _segments_overlap(a: str, b: str) -> bool:
+    """Whether two path segments, with placeholders, could match the same name."""
     bounds_a, bounds_b = _segment_bounds(a), _segment_bounds(b)
     if bounds_a is None and bounds_b is None:
         return a == b
@@ -59,6 +61,7 @@ def check_path_pattern(
     line: int | None,
     fields: Mapping[str, Field] | None,
 ) -> None:
+    """A drawer type's path: declared placeholders, at least one required."""
     c.path_value(value, path, line)
     if fields is None:  # a field is invalid: placeholders cannot be judged
         return
@@ -84,6 +87,7 @@ def check_path_pattern(
 
 
 def check_overlaps(c: Checker, root: Any, types: Mapping[str, DrawerType]) -> None:
+    """Record each drawer type whose path overlaps an earlier one."""
     names = list(types)
     for i, first in enumerate(names):
         for second in names[i + 1 :]:

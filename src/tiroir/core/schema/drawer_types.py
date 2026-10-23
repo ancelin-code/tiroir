@@ -19,6 +19,7 @@ from tiroir.core.yaml_io import key_line
 def _check_drawer_type(
     c: Checker, node: object, path: str, line: int | None
 ) -> DrawerType | None:
+    """One drawer type: its keys, fields, path pattern and optional blocks."""
     keys = (
         "label",
         "label_plural",
@@ -55,6 +56,7 @@ def _check_drawer_type(
 
 
 def check_drawer_types(c: Checker, root: Any) -> dict[str, DrawerType] | None:
+    """Every drawer type of the document, then the overlaps between their paths."""
     if "drawer_types" not in root:
         return None
     raw = root["drawer_types"]

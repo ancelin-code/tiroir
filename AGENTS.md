@@ -65,3 +65,10 @@ stderr, set up by `tiroir.cli.main.setup_logging`). Never log memory content
 The `tiroir` command is parsed with `argparse` (ADR-002), one sub-parser per
 command group of [the CLI contract](delivery/contracts/cli.md). No other
 argument parsing library.
+
+## Docstrings
+
+Give functions, methods and classes a docstring of one or two lines that says
+what they are for and, where it is not obvious, what they return or raise.
+Skip it only where the name and signature already say everything (a test, a
+dunder method, a one-line accessor).

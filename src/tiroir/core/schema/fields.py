@@ -47,6 +47,7 @@ def value_problem(field: Field, value: object) -> str | None:
 
 
 def _as_date(value: object) -> date | None:
+    """`value` as a date when it is a date or a `YYYY-MM-DD` string, else `None`."""
     if isinstance(value, datetime):
         return None
     if isinstance(value, date):
@@ -60,6 +61,7 @@ def _as_date(value: object) -> date | None:
 
 
 def _check_field(c: Checker, node: object, path: str, line: int | None) -> Field | None:
+    """One field declaration: its keys, type, values, pattern and default."""
     keys = ("type", "required", "values", "pattern", "default", "description")
     if c.mapping(node, path, line, keys, ("type",)) is None:
         return None
@@ -110,6 +112,7 @@ def _check_field(c: Checker, node: object, path: str, line: int | None) -> Field
 def _check_default(
     c: Checker, node: Mapping[str, Any], path: str, field: Field
 ) -> FieldValue | None:
+    """A field's default, which must be acceptable for the field itself."""
     if "default" not in node:
         return None
     raw = node["default"]
@@ -133,6 +136,7 @@ def _check_default(
 def check_fields(
     c: Checker, node: Mapping[str, Any], path: str
 ) -> dict[str, Field] | None:
+    """The `fields` block of a drawer type, with reserved and invalid names refused."""
     if "fields" not in node:
         return None
     where = f"{path}.fields"

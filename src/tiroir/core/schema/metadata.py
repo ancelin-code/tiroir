@@ -21,6 +21,7 @@ def validate_metadata(
     violations: list[Violation] = []
 
     def report(name: str, message: str) -> None:
+        """Record a `metadata.invalid` violation on the field `name`."""
         violations.append(
             Violation(METADATA_INVALID, name, message, key_line(mapping, name))
         )

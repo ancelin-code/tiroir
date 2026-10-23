@@ -13,6 +13,7 @@ USAGE = "usage: tiroir [--version] [--help]"
 
 
 def _below_warning(record: "Record") -> bool:
+    """Whether the record goes to stdout (INFO and below)."""
     return record["level"].no < logger.level("WARNING").no
 
 
@@ -31,6 +32,7 @@ def setup_logging() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the `tiroir` command with `argv` and return its exit code."""
     setup_logging()
     args = sys.argv[1:] if argv is None else argv
     if "--version" in args:

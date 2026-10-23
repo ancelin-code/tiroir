@@ -38,6 +38,7 @@ class YamlError(ValueError):
 
 
 def _reader() -> YAML:
+    """A round-trip YAML 1.2 reader that refuses duplicate keys."""
     yaml = YAML(typ="rt")
     yaml.version = (1, 2)
     yaml.allow_duplicate_keys = False
@@ -45,10 +46,12 @@ def _reader() -> YAML:
 
 
 def _line(mark: Any) -> int | None:
+    """The 1-based line of a parser mark, or `None`."""
     return None if mark is None else int(mark.line) + 1
 
 
 def _refuse_unsupported(text: str) -> None:
+    """Raise `YamlError` unless `text` is one YAML document with no 1.1 directive."""
     documents = 0
     for event in _reader().parse(text):
         if isinstance(event, DocumentStartEvent):
@@ -114,6 +117,7 @@ def node_line(node: Any) -> int | None:
 
 @lru_cache(maxsize=4096)  # bounded: a long-running server writes many values
 def _resolves_to_itself(text: str) -> bool:
+    """Whether a YAML 1.2 reader reads `text` back as the same string."""
     try:
         reader = YAML(typ="safe")
         reader.version = (1, 2)
@@ -123,6 +127,7 @@ def _resolves_to_itself(text: str) -> bool:
 
 
 def _is_plain(text: str) -> bool:
+    """Whether `text` can be written unquoted and still read back as itself."""
     return (
         text != ""
         and text[0].isalnum()
@@ -142,6 +147,7 @@ def _quote(text: str) -> str:
 
 
 def _scalar(value: object) -> str:
+    """A scalar as YAML text, quoted only when needed."""
     if value is None:
         return "null"
     if isinstance(value, bool):
@@ -162,6 +168,7 @@ def _scalar(value: object) -> str:
 
 
 def _emit(lines: list[str], key: str, value: object, indent: int) -> None:
+    """Append `key: value` to `lines`, nesting mappings and writing lists inline."""
     prefix = f"{' ' * indent}{_scalar(key)}:"
     if isinstance(value, Mapping):
         if not value:

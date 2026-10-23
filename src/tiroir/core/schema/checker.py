@@ -15,6 +15,7 @@ _SLUG = re.compile(r"[a-z0-9]+(?:[-_][a-z0-9]+)*")
 
 
 def failure(violations: list[Violation]) -> CoreError:
+    """The error raised for `violations`, coded after the first one."""
     detail = "\n".join(str(v) for v in violations)
     count = len(violations)
     noun = "violation" if count == 1 else "violations"
@@ -32,9 +33,11 @@ class Checker:
         self.violations: list[Violation] = []
 
     def report(self, code: str, path: str, message: str, line: int | None) -> None:
+        """Record a violation with an explicit code."""
         self.violations.append(Violation(code, path, message, line))
 
     def invalid(self, path: str, message: str, line: int | None) -> None:
+        """Record a `schema.invalid` violation."""
         self.report(INVALID, path, message, line)
 
     def mapping(
@@ -62,6 +65,7 @@ class Checker:
         return node
 
     def string(self, parent: Any, key: str, path: str) -> str | None:
+        """The string at `parent[key]`, or `None` when absent or not a string."""
         if key not in parent:
             return None
         value = parent[key]
@@ -71,6 +75,7 @@ class Checker:
         return str(value)
 
     def slug(self, value: object, path: str, line: int | None, what: str) -> bool:
+        """Whether `value` is a lowercase slug; records a violation when not."""
         if isinstance(value, str) and _SLUG.fullmatch(value):
             return True
         self.invalid(
@@ -79,6 +84,7 @@ class Checker:
         return False
 
     def integer(self, parent: Any, key: str, path: str) -> int | None:
+        """The positive integer at `parent[key]`, or `None` when absent or invalid."""
         if key not in parent:
             return None
         value = parent[key]
@@ -90,6 +96,7 @@ class Checker:
         return int(value)
 
     def boolean(self, parent: Any, key: str, path: str) -> bool | None:
+        """The boolean at `parent[key]`, or `None` when absent or invalid."""
         if key not in parent:
             return None
         value = parent[key]
@@ -101,6 +108,7 @@ class Checker:
     def string_list(
         self, parent: Any, key: str, path: str, *, minimum: int = 0
     ) -> tuple[str, ...] | None:
+        """The list of strings at `parent[key]`, or `None` when absent or invalid."""
         if key not in parent:
             return None
         value = parent[key]
@@ -123,6 +131,7 @@ class Checker:
         return tuple(str(item) for item in value)
 
     def path_value(self, value: str, path: str, line: int | None) -> None:
+        """Record a violation unless `value` is a relative path (`/`, no `.` or `..`)."""
         segments = value.split("/")
         if (
             value.startswith("/")
@@ -137,6 +146,7 @@ class Checker:
             )
 
     def path_key(self, parent: Any, key: str, path: str) -> str | None:
+        """The string at `parent[key]`, checked as a path relative to the store root."""
         value = self.string(parent, key, path)
         if value is not None:
             self.path_value(value, join(path, key), key_line(parent, key))
@@ -144,4 +154,5 @@ class Checker:
 
 
 def join(path: str, key: str) -> str:
+    """The dotted path of `key` under `path`."""
     return f"{path}.{key}" if path else key

@@ -8,6 +8,7 @@ from tiroir.core.yaml_io import dump_yaml
 
 
 def _field_entry(field: Field) -> dict[str, Any]:
+    """A field as a mapping in contract order, leaving out unset keys."""
     entry: dict[str, Any] = {"type": field.type}
     optional = (
         ("required", field.required),
@@ -21,6 +22,7 @@ def _field_entry(field: Field) -> dict[str, Any]:
 
 
 def _drawer_type_entry(drawer_type: DrawerType) -> dict[str, Any]:
+    """A drawer type as a mapping in contract order, leaving out unset keys."""
     entry: dict[str, Any] = {"label": drawer_type.label}
     if drawer_type.label_plural is not None:
         entry["label_plural"] = drawer_type.label_plural
@@ -49,6 +51,7 @@ def _drawer_type_entry(drawer_type: DrawerType) -> dict[str, Any]:
 
 
 def _present(entries: Mapping[str, Any]) -> dict[str, Any]:
+    """`entries` without the values that are `None`."""
     return {k: v for k, v in entries.items() if v is not None}
 
 

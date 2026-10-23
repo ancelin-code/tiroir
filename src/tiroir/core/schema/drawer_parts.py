@@ -12,6 +12,7 @@ _DETECTABLE_TYPES = ("text", "list")
 
 
 def check_summary(c: Checker, node: Mapping[str, Any], path: str) -> Summary | None:
+    """The `summary` block of a drawer type: template path and unique headings."""
     if "summary" not in node:
         return None
     where = f"{path}.summary"
@@ -38,6 +39,7 @@ def check_summary(c: Checker, node: Mapping[str, Any], path: str) -> Summary | N
 
 
 def check_log(c: Checker, node: Mapping[str, Any], path: str) -> Log | None:
+    """The `log` block of a drawer type: the optional template path."""
     if "log" not in node:
         return None
     where = f"{path}.log"
@@ -53,6 +55,7 @@ def check_detect(
     path: str,
     fields: Mapping[str, Field] | None,
 ) -> Detect | None:
+    """The `detect` block: names that must be declared text or list fields."""
     if "detect" not in node:
         return None
     where = f"{path}.detect"
@@ -89,6 +92,7 @@ def check_detect(
 def check_inject(
     c: Checker, node: Mapping[str, Any], path: str, summary: Summary | None
 ) -> Inject | None:
+    """The `inject` block: sections must be headings of the summary."""
     if "inject" not in node:
         return None
     where = f"{path}.inject"

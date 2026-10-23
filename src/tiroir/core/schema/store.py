@@ -15,6 +15,7 @@ _LANGUAGE = re.compile(r"[a-z]{2}")
 
 
 def check_store(c: Checker, root: Any) -> Store | None:
+    """The `store` block: id, name, audience, language and description."""
     node = root.get("store")
     where = "store"
     line = key_line(root, "store")
@@ -53,6 +54,7 @@ def check_store(c: Checker, root: Any) -> Store | None:
 
 
 def _is_uuid(value: str) -> bool:
+    """Whether `value` is a canonical UUID."""
     try:
         return str(uuid.UUID(value)) == value.lower()
     except ValueError:
@@ -60,6 +62,7 @@ def _is_uuid(value: str) -> bool:
 
 
 def check_shared(c: Checker, root: Any) -> Shared | None:
+    """The optional `shared` block."""
     if "shared" not in root:
         return None
     node = root["shared"]
@@ -74,6 +77,7 @@ def check_shared(c: Checker, root: Any) -> Shared | None:
 
 
 def check_context(c: Checker, root: Any) -> Context | None:
+    """The optional `context` block."""
     if "context" not in root:
         return None
     node = root["context"]
