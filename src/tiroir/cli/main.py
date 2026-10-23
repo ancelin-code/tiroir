@@ -1,15 +1,16 @@
 """Entry point of the `tiroir` command."""
 
+import argparse
 import sys
 from importlib.metadata import version
 from typing import TYPE_CHECKING
 
 from loguru import logger
 
+from tiroir.cli import admin
+
 if TYPE_CHECKING:
     from loguru import Record
-
-USAGE = "usage: tiroir [--version] [--help]"
 
 
 def _below_warning(record: "Record") -> bool:
@@ -30,17 +31,25 @@ def setup_logging() -> None:
     logger.add(sys.stderr, format="{message}", level="WARNING", diagnose=False)
 
 
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="tiroir")
+    parser.add_argument("--version", action="version", version=version("tiroir"))
+    commands = parser.add_subparsers(dest="command")
+    admin.register(commands)
+    return parser
+
+
 def main(argv: list[str] | None = None) -> int:
     setup_logging()
-    args = sys.argv[1:] if argv is None else argv
-    if "--version" in args:
-        logger.info(version("tiroir"))
+    parser = _parser()
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit as exit_:  # argparse: 0 after --version, 2 on a usage error
+        return int(exit_.code or 0)
+    if args.command is None:
+        logger.info(parser.format_help().rstrip())
         return 0
-    if "--help" in args or not args:
-        logger.info(USAGE)
-        return 0
-    logger.error(USAGE)
-    return 2
+    return int(args.run(args))
 
 
 if __name__ == "__main__":
