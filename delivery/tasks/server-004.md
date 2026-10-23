@@ -43,8 +43,8 @@ Files this task is expected to touch:
 - `src/tiroir/server/app.py`: mount `/mcp` behind the bearer-token check of
   `server-002`'s `verify.py`, answering `401` with the `WWW-Authenticate`
   header of the contract
-- `tests/server/test_mcp_tools.py`, `tests/server/test_mcp_auth.py`,
-  `tests/server/test_end_to_end.py`
+- `tests/integration/test_mcp_tools.py`, `tests/integration/test_mcp_auth.py`,
+  `tests/integration/test_end_to_end.py`
 
 Out of scope:
 
@@ -55,7 +55,7 @@ Out of scope:
 
 ## Acceptance criteria
 
-- `tests/server/test_end_to_end.py` starts the application on a temporary data
+- `tests/integration/test_end_to_end.py` starts the application on a temporary data
   directory with a store created from the preset, runs the OAuth flow as a
   client, opens an MCP session with the SDK's client, lists tools (exactly the
   four above), lists drawers, appends a log entry to a client, and finds it
@@ -72,5 +72,5 @@ Out of scope:
 
 ## Validation
 
-`mise run test -- tests/server/test_mcp_tools.py tests/server/test_mcp_auth.py
-tests/server/test_end_to_end.py`, then `mise run check`.
+`mise run test -- tests/integration/test_mcp_tools.py
+tests/integration/test_mcp_auth.py tests/integration/test_end_to_end.py`, then `mise run check`.

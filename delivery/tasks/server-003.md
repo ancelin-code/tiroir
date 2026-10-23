@@ -50,8 +50,8 @@ Files this task is expected to touch:
 - `src/tiroir/cli/admin.py`: `tiroir admin stores list|add <name> --audience
   personal|team --language <code> [--owner <handle>] [--preset <name>]`,
   `tiroir admin grant|revoke`, `tiroir admin index`
-- `tests/core/test_api.py`, `tests/core/test_presets.py`,
-  `tests/cli/test_admin_stores.py`
+- `tests/integration/test_api.py`, `tests/integration/test_presets.py`,
+  `tests/integration/test_admin_stores.py`
 
 Out of scope:
 
@@ -82,5 +82,5 @@ Out of scope:
 
 ## Validation
 
-`mise run test -- tests/core/test_api.py tests/core/test_presets.py
-tests/cli/test_admin_stores.py`, then `mise run check`.
+`mise run test -- tests/integration/test_api.py
+tests/integration/test_presets.py tests/integration/test_admin_stores.py`, then `mise run check`.

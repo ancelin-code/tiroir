@@ -43,7 +43,7 @@ Files this task is expected to touch:
   on tags, push to `ghcr.io` with build provenance attestations; fail when the
   compressed image exceeds 600 MB
 - `mise.toml`: tasks `image` (local build) and `stack` (`docker compose up`)
-- `tests/deploy/test_compose_config.py` (static checks of `compose.yaml` and
+- `tests/integration/test_compose_config.py` (static checks of `compose.yaml` and
   the Caddyfile)
 
 Out of scope:
