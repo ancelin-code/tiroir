@@ -19,6 +19,20 @@ exception is user-facing memory content, whose language is a store setting
 
 ## Tests
 
+Tests are either unit or integration tests, and live in the matching folder:
+
+- `tests/unit/`: pure logic, with no filesystem, SQLite, Git, network or
+  subprocess. Mirrors `src/tiroir/`, one file per module:
+  `src/tiroir/core/layout.py` is tested by `tests/unit/core/test_layout.py`.
+  They are fast: `mise run test:unit`.
+- `tests/integration/`: anything that touches the real thing: SQLite, bare Git
+  repositories, files, the web application (Starlette's test client), a
+  command run through `main()`. Named after the feature, flat:
+  `tests/integration/test_admin_members.py`. Use the real components in
+  `tmp_path`; do not mock SQLite or Git.
+- A module with both pure logic and I/O has a file in each folder. A test that
+  needs the database to mean anything is an integration test, however small.
+
 Every test is laid out in three blocks, each opened by a comment: `# Given`
 (the setup), `# When` (the one action under test) and `# Then` (the
 assertions). Keep the action out of the assertions: call it under `# When`,
@@ -41,9 +55,10 @@ def test_unknown_argument_fails(capsys: pytest.CaptureFixture[str]) -> None:
 
 ## Logs
 
-No `print` outside `src/tiroir/cli/`, where it shows the command's results
-(ruff `T20` enforces it). Everything else uses `from loguru import logger`.
-Never log memory content (Y5): identifiers, codes and counts only.
+No `print` anywhere (ruff `T20`): use `from loguru import logger`, including
+for what a command shows the user (`logger.info` to stdout, `logger.error` to
+stderr, set up by `tiroir.cli.main.setup_logging`). Never log memory content
+(Y5): identifiers, codes and counts only.
 
 ## Command line
 
