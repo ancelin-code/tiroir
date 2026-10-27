@@ -37,6 +37,15 @@ injection and sync.
 - A CLI for setup, indexing, search, validation, sync, migration and erasure.
 - Presets for developers and accounting firms, with synthetic data.
 
+## Install
+
+- [Install tiroir on a VPS](docs/install/vps.md): the Compose stack behind
+  Caddy, the first administrator, a member and a store from a preset.
+- [Connect Claude Desktop](docs/connect/claude-desktop.md): add the server as
+  a custom connector and sign in.
+- [Skeleton exit check](docs/milestones/skeleton-exit-check.md): the checklist
+  run against a real server at the end of the first milestone.
+
 ## Project documents
 
 - [Product brief](docs/brief.md): vision, principles and constraints.
