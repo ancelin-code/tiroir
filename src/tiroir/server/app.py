@@ -1,4 +1,4 @@
-"""The Starlette application: `/health`, sign-in and OAuth, the request log."""
+"""The Starlette application: `/health`, sign-in, OAuth, `/mcp`, the request log."""
 
 import time
 from collections.abc import AsyncIterator
@@ -9,13 +9,15 @@ from pathlib import Path
 
 import httpx
 from loguru import logger
+from mcp.server.auth.middleware.auth_context import AuthContextMiddleware
+from mcp.server.transport_security import TransportSecuritySettings
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from tiroir.core.serverdb import open_server_db
+from tiroir.core import Core, open_core
 from tiroir.server.auth.oauth import (
     ClientMetadataDocuments,
     Resolver,
@@ -24,7 +26,9 @@ from tiroir.server.auth.oauth import (
     resolve,
 )
 from tiroir.server.auth.pages import page_routes
+from tiroir.server.auth.verify import MCP_PATH, require_member
 from tiroir.server.logging import configure_logging
+from tiroir.server.mcp import build_server
 
 DEFAULT_DATA_DIR = "/data"
 DEFAULT_DOMAIN = "localhost"
@@ -77,26 +81,48 @@ def create_app(
 ) -> Starlette:
     """Build the application on a data directory, served at `origin`.
 
-    The core facade arrives with the stores (server-003); until then the
-    data directory is the only thing the server needs. `origin` is the public
-    address behind Caddy, the OAuth issuer; `http_transport` carries the
-    fetches of client metadata documents and `resolver` resolves their host
-    names (a test serves its own).
+    `origin` is the public address behind Caddy, the OAuth issuer;
+    `http_transport` carries the fetches of client metadata documents and
+    `resolver` resolves their host names (a test serves its own). `/mcp` is
+    the MCP endpoint, open to the access tokens of active members only.
     """
     data_dir = Path(core_or_data_dir)
     documents = ClientMetadataDocuments(http_transport, resolver)
     provider = TiroirProvider(data_dir, origin, documents)
 
+    def core() -> Core:
+        return app.state.core
+
+    async def mcp_endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+        await app.state.mcp_app(scope, receive, send)
+
     @asynccontextmanager
     async def lifespan(app: Starlette) -> AsyncIterator[None]:
-        open_server_db(data_dir).close()  # creates it, applies the migrations
-        app.state.ready = True
-        yield
-        app.state.ready = False
+        app.state.core = open_core(data_dir)  # creates server.db, migrates it
+        try:
+            # A session manager runs once, so each start builds its own MCP app.
+            # Caddy owns the Host check; the bearer token is the access control.
+            app.state.mcp_app = build_server(core).streamable_http_app(
+                streamable_http_path=MCP_PATH,
+                transport_security=TransportSecuritySettings(
+                    enable_dns_rebinding_protection=False
+                ),
+            )
+            async with app.state.mcp_app.router.lifespan_context(app.state.mcp_app):
+                app.state.ready = True
+                yield
+        finally:
+            app.state.ready = False
+            app.state.core.close()
 
     app = Starlette(
         routes=[
             Route("/health", health, methods=["GET"]),
+            Route(
+                MCP_PATH,
+                require_member(AuthContextMiddleware(mcp_endpoint), data_dir, origin),
+                methods=["POST", "GET", "DELETE"],
+            ),
             *oauth_routes(provider),
             *page_routes(provider),
         ],
