@@ -3,6 +3,8 @@
 import argparse
 import ipaddress
 import sqlite3
+from collections.abc import Callable
+from contextlib import closing
 from os import environ
 from pathlib import Path
 from typing import Any
@@ -10,7 +12,8 @@ from typing import Any
 import uvicorn
 from loguru import logger
 
-from tiroir.core import serverdb
+from tiroir.core import Access, AdminContext, Audience, CoreError, open_core, serverdb
+from tiroir.core.presets import preset_path
 from tiroir.core.serverdb import Member, ServerDbError
 
 DEFAULT_DATA_DIR = "/data"
@@ -20,6 +23,13 @@ INITIAL_ADMIN_HANDLE = "admin"
 # Compose network that holds Caddy (`compose.yaml`), else only this container.
 TRUSTED_PROXIES_VARIABLE = "TIROIR_TRUSTED_PROXIES"
 DEFAULT_TRUSTED_PROXIES = "127.0.0.1"
+# Where the presets live: `presets/` of the repository, copied into the image.
+PRESETS_VARIABLE = "TIROIR_PRESETS"
+DEFAULT_PRESETS_DIR = "/app/presets"
+# Exit codes of the CLI contract for a failure of the core.
+EXIT_FAILED = 1
+EXIT_REFUSED = 3
+EXIT_BUSY = 5
 
 
 def _data_dir() -> Path:
@@ -115,6 +125,86 @@ def _members_action(conn: sqlite3.Connection, args: argparse.Namespace) -> int:
     return 0
 
 
+def _exit_code(error: CoreError) -> int:
+    """The exit code of the CLI contract for a core failure."""
+    if error.code == "store.busy":
+        return EXIT_BUSY
+    if error.code.startswith("access.") or error.code == "scope.denied":
+        return EXIT_REFUSED
+    return EXIT_FAILED
+
+
+def _acting_admin(conn: sqlite3.Connection) -> str | None:
+    """The handle of the first enabled administrator, who acts for the operator."""
+    admins = [m for m in serverdb.list_members(conn) if m.is_admin and not m.disabled]
+    return admins[0].handle if admins else None
+
+
+def _with_admin(run: Callable[[AdminContext], None]) -> int:
+    """Run `run` as the server's administrator; a core failure becomes an exit code."""
+    with closing(serverdb.open_server_db(_data_dir())) as conn:
+        handle = _acting_admin(conn)
+    if handle is None:
+        return _error("the server has no administrator: run `tiroir admin init`")
+    core = open_core(_data_dir(), start_workers=False)
+    try:
+        run(core.admin(handle))
+    except CoreError as error:
+        logger.error(f"error: {error.code}: {error.message}")
+        return _exit_code(error)
+    finally:
+        core.close()
+    return 0
+
+
+def _stores(args: argparse.Namespace) -> int:
+    def run(admin: AdminContext) -> None:
+        if (args.action or "list") == "list":
+            for store in admin.stores():
+                logger.info(
+                    f"{store.name}\t{store.audience.value}\t{store.language}"
+                    f"\t{store.members} members"
+                )
+            return
+        preset = None
+        if args.preset is not None:
+            presets = Path(environ.get(PRESETS_VARIABLE, DEFAULT_PRESETS_DIR))
+            preset = preset_path(presets, args.preset)
+        created = admin.create_store(
+            args.name, Audience(args.audience), args.language, args.owner, preset
+        )
+        logger.info(f"store: {created.name}")
+
+    return _with_admin(run)
+
+
+def _grant(args: argparse.Namespace) -> int:
+    def run(admin: AdminContext) -> None:
+        admin.grant(args.handle, args.store, Access(args.access))
+        logger.info(f"{args.handle}: {args.access} access to {args.store}")
+
+    return _with_admin(run)
+
+
+def _revoke(args: argparse.Namespace) -> int:
+    def run(admin: AdminContext) -> None:
+        admin.revoke(args.handle, args.store)
+        logger.info(f"{args.handle}: no access to {args.store}")
+
+    return _with_admin(run)
+
+
+def _index(args: argparse.Namespace) -> int:
+    def run(admin: AdminContext) -> None:
+        for report in admin.index(args.store, args.rebuild).stores:
+            logger.info(
+                f"{report.store}: {report.files_indexed} files indexed,"
+                f" {report.chunks} chunks"
+            )
+
+    return _with_admin(run)
+
+
 def trusted_proxies(value: str) -> list[str]:
     """The networks of a comma-separated list; raises `ValueError` on anything else.
 
@@ -168,4 +258,27 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
     add.add_argument("--admin", action="store_true")
     actions.add_parser("disable").add_argument("handle")
     actions.add_parser("reset-password").add_argument("handle")
+    stores = admin_commands.add_parser("stores", help="list and create stores")
+    stores.set_defaults(run=_stores)
+    store_actions = stores.add_subparsers(dest="action")
+    store_actions.add_parser("list")
+    add_store = store_actions.add_parser("add")
+    add_store.add_argument("name")
+    add_store.add_argument("--audience", required=True, choices=["personal", "team"])
+    add_store.add_argument("--language", required=True)
+    add_store.add_argument("--owner")
+    add_store.add_argument("--preset")
+    grant = admin_commands.add_parser("grant", help="give a member access to a store")
+    grant.set_defaults(run=_grant)
+    grant.add_argument("handle")
+    grant.add_argument("store")
+    grant.add_argument("access", choices=["read", "write"])
+    revoke = admin_commands.add_parser("revoke", help="remove a member's access")
+    revoke.set_defaults(run=_revoke)
+    revoke.add_argument("handle")
+    revoke.add_argument("store")
+    index = admin_commands.add_parser("index", help="bring indexes up to date")
+    index.set_defaults(run=_index)
+    index.add_argument("--store")
+    index.add_argument("--rebuild", action="store_true")
     admin_commands.add_parser("serve", help="run the server").set_defaults(run=_serve)

@@ -19,6 +19,7 @@ from loguru import logger
 
 from tiroir.core import textnorm
 from tiroir.core.chunking import Kind
+from tiroir.core.errors import CoreError
 from tiroir.core.index import index_path
 
 CANDIDATES = 50
@@ -40,6 +41,17 @@ class DrawerRef:
 
     store: str
     drawer: str
+
+    @classmethod
+    def parse(cls, text: str) -> "DrawerRef":
+        """`store:drawer`; raises `params.invalid` for anything else."""
+        store, sep, drawer = text.partition(":")
+        if not (store and sep and drawer):
+            raise CoreError("params.invalid", "expected a drawer as store:drawer")
+        return cls(store, drawer)
+
+    def __str__(self) -> str:
+        return f"{self.store}:{self.drawer}"
 
 
 @dataclass(frozen=True)

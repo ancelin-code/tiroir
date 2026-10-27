@@ -24,9 +24,11 @@ RUN apt-get update \
     && mkdir /data \
     && chown tiroir:tiroir /data
 COPY --from=build /app/.venv /app/.venv
+COPY presets /app/presets
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    TIROIR_DATA=/data
+    TIROIR_DATA=/data \
+    TIROIR_PRESETS=/app/presets
 USER tiroir
 VOLUME /data
 EXPOSE 8080
