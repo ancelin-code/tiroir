@@ -15,6 +15,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from loguru import logger
+
 from tiroir.core import textnorm
 from tiroir.core.chunking import Kind
 from tiroir.core.index import index_path
@@ -144,7 +146,7 @@ def _search_index(
     if scope.drawers and not scope.all_drawers and not drawers:
         return []
     query_terms = list(dict.fromkeys(textnorm.terms(query, language)))
-    query_ids = textnorm.identifier_tokens(query)
+    query_ids = textnorm.identifier_tokens(query, query=True)
     if not query_terms and not query_ids:
         return []
     conditions, params = _where(scope, filters, drawers)
@@ -221,8 +223,9 @@ def search_lexical(
     The scope and the filters narrow the candidates before ranking. A chunk is
     admitted when it matches an identifier of the query exactly or at least
     half of the query's content terms (one at least); chunks matching an
-    identifier come first, then by BM25 score. Stores without an index are
-    skipped. Scores of different stores are only roughly comparable.
+    identifier come first, then by BM25 score. Stores without an index, or
+    with an unreadable one (logged), are skipped. Scores of different stores
+    are only roughly comparable.
     """
     filters = filters or Filters()
     found: list[_Candidate] = []
@@ -230,7 +233,10 @@ def search_lexical(
         path = index_path(data_dir, store_id)
         if not path.exists():
             continue
-        with closing(sqlite3.connect(path)) as db:
-            found += _search_index(db, query, scope, filters)
+        try:
+            with closing(sqlite3.connect(path)) as db:
+                found += _search_index(db, query, scope, filters)
+        except sqlite3.DatabaseError:
+            logger.error("index of store {} is unreadable, skipped", store_id)
     found.sort(key=lambda c: (not c.exact, -c.hit.score, c.hit.path, c.order))
     return [candidate.hit for candidate in found[:limit]]

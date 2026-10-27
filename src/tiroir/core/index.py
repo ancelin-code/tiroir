@@ -10,12 +10,14 @@ table keyed by chunk id; nothing here depends on them.
 import hashlib
 import re
 import sqlite3
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
+
+from loguru import logger
 
 from tiroir.core import textnorm
 from tiroir.core.chunking import (
@@ -113,6 +115,37 @@ def _transaction(db: sqlite3.Connection) -> Iterator[None]:
     db.execute("COMMIT")
 
 
+def _connect_readable(path: Path) -> sqlite3.Connection | None:
+    """`connect`, or `None` when the file is not a readable SQLite database."""
+    db: sqlite3.Connection | None = None
+    try:
+        db = connect(path)
+        _meta(db, "commit")
+        return db
+    except sqlite3.OperationalError:
+        raise  # busy or locked, not corrupt
+    except sqlite3.DatabaseError:
+        if db is not None:
+            db.close()
+        return None
+
+
+def _open(path: Path) -> sqlite3.Connection:
+    """Connect to an index file, deleting it first when it is not a database.
+
+    A file SQLite cannot read (garbage, truncated) would fail on every run, so
+    it is removed with its WAL siblings and recreated empty; the caller then
+    sees a new index and rebuilds it. A busy or locked file is left alone.
+    """
+    db = _connect_readable(path)
+    if db is not None:
+        return db
+    logger.warning("index of {} is unreadable, rebuilding it", path.stem)
+    for suffix in ("", "-wal", "-shm"):
+        path.with_name(path.name + suffix).unlink(missing_ok=True)
+    return connect(path)
+
+
 def _meta(db: sqlite3.Connection, key: str) -> str | None:
     """A value of the `meta` table, `None` when the table or the key is missing."""
     try:
@@ -132,7 +165,14 @@ def _wipe(db: sqlite3.Connection) -> None:
 
 
 def _flatten(value: object) -> list[str]:
-    """A metadata value as the strings it filters on: one per list item."""
+    """A metadata value as the strings it filters on: one per list item.
+
+    `None` and mappings give nothing; booleans give `true` or `false`.
+    """
+    if value is None or isinstance(value, Mapping):
+        return []
+    if isinstance(value, bool):
+        return ["true" if value else "false"]
     if isinstance(value, str):
         return [value]
     if isinstance(value, datetime):
@@ -153,6 +193,12 @@ def _as_date(value: object) -> str | None:
     if isinstance(value, date):
         return value.isoformat()
     return None
+
+
+def _author(fields: Mapping[str, Any]) -> str | None:
+    """The `author` frontmatter as text, `None` when absent, null or empty."""
+    names = [name for name in _flatten(fields.get("author")) if name.strip()]
+    return ", ".join(names) or None
 
 
 def _frontmatter(text: str) -> tuple[dict[str, Any], str]:
@@ -234,7 +280,7 @@ def _add(db: sqlite3.Connection, schema: Schema, path: str, data: bytes) -> int 
     elif where.kind is Kind.LOG:
         chunks = log_chunks(body)
         when = _as_date(fields.get("date"))
-        author = str(fields["author"]) if "author" in fields else None
+        author = _author(fields)
     else:
         chunks = shared_chunks(body)
     db.execute(
@@ -300,7 +346,7 @@ def _index(data_dir: Path, store_id: str, *, force: bool) -> IndexReport:
     schema = reader.schema(head)
     path = index_path(data_dir, store_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with closing(connect(path)) as db:
+    with closing(_open(path)) as db:
         recorded = _meta(db, "commit")
         if force or _meta(db, "schema_hash") != SCHEMA_HASH:
             recorded = None

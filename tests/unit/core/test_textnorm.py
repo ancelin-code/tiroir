@@ -100,3 +100,58 @@ def test_identifier_tokens_ignore_plain_words_and_repeats() -> None:
 
     # Then
     assert found == ["c001"]
+
+
+def test_identifier_tokens_index_a_prefixed_code_whole_and_by_its_digits() -> None:
+    # Given
+    text = "Facture FAC-2026-001 et client C-001"
+
+    # When
+    found = identifier_tokens(text)
+
+    # Then
+    assert found == ["fac2026001", "c001", "2026001", "001"]
+
+
+def test_identifier_tokens_query_a_prefixed_code_by_its_joined_form_only() -> None:
+    # Given
+    text = "C-001"
+
+    # When
+    found = identifier_tokens(text, query=True)
+
+    # Then
+    assert found == ["c001"]
+
+
+def test_identifier_tokens_query_keeps_digit_runs_and_bare_numbers() -> None:
+    # Given
+    text = "2026-001 puis 001"
+
+    # When
+    found = identifier_tokens(text, query=True)
+
+    # Then
+    assert found == ["2026001", "001"]
+
+
+def test_prefixed_query_shares_no_token_with_another_prefix() -> None:
+    # Given
+    indexed = identifier_tokens("dossier D-001")
+
+    # When
+    wanted = identifier_tokens("C-001", query=True)
+
+    # Then
+    assert not set(wanted).intersection(indexed)
+
+
+def test_number_query_matches_the_digits_of_a_prefixed_code() -> None:
+    # Given
+    indexed = identifier_tokens("FAC-2026-001")
+
+    # When
+    wanted = identifier_tokens("2026-001", query=True)
+
+    # Then
+    assert set(wanted).issubset(indexed)

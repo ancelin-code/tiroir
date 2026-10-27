@@ -367,3 +367,82 @@ def test_incremental_index_gives_the_same_hits_as_a_rebuild(
 
     # Then
     assert rebuilt == incremental
+
+
+def test_prefixed_code_ranks_its_own_chunk_first_and_not_another_prefix(
+    indexed: Path, store_id: str, author: Author
+) -> None:
+    # Given
+    append_log(indexed, store_id, "clients/c001", "Dossier D-001 transmis.", author)
+    append_log(indexed, store_id, "clients/c002", "Dossier C-001 ouvert.", author)
+    index_store(indexed, store_id)
+
+    # When
+    hits = search(indexed, store_id, "C-001")
+
+    # Then
+    assert "C-001" in hits[0].text
+    assert Channel.IDENTIFIER in hits[0].channels
+    other = [hit for hit in hits if "D-001" in hit.text]
+    assert all(Channel.IDENTIFIER not in hit.channels for hit in other)
+
+
+def test_number_query_finds_a_prefixed_invoice_number(
+    indexed: Path, store_id: str, author: Author
+) -> None:
+    # Given
+    append_log(indexed, store_id, "clients/c001", "Avoir FAC-2027-002 émis.", author)
+    index_store(indexed, store_id)
+
+    # When
+    hits = search(indexed, store_id, "2027-002")
+
+    # Then
+    assert "FAC-2027-002" in hits[0].text
+    assert Channel.IDENTIFIER in hits[0].channels
+
+
+def test_garbage_index_file_is_rebuilt(indexed: Path, store_id: str) -> None:
+    # Given
+    fresh = [search(indexed, store_id, query, limit=50) for query in QUERIES]
+    index_path(indexed, store_id).write_bytes(b"this is not a database" * 100)
+
+    # When
+    report = rebuild(indexed, store_id)
+    after = [search(indexed, store_id, query, limit=50) for query in QUERIES]
+
+    # Then
+    assert report.rebuilt
+    assert any(fresh)
+    assert after == fresh
+
+
+def test_garbage_index_file_is_replaced_by_an_index_run(
+    indexed: Path, store_id: str
+) -> None:
+    # Given
+    fresh = search(indexed, store_id, "echeance", limit=50)
+    index_path(indexed, store_id).write_bytes(b"\x00garbage")
+
+    # When
+    report = index_store(indexed, store_id)
+
+    # Then
+    assert report.rebuilt
+    assert search(indexed, store_id, "echeance", limit=50) == fresh
+
+
+def test_search_skips_a_broken_store_and_keeps_the_good_one(
+    indexed: Path, store_id: str
+) -> None:
+    # Given
+    broken = "00000000-0000-4000-8000-000000000000"
+    index_path(indexed, broken).write_bytes(b"not sqlite at all" * 50)
+    expected = search(indexed, store_id, "echeance", limit=50)
+
+    # When
+    hits = search_lexical(indexed, [broken, store_id], "echeance", EVERYWHERE, limit=50)
+
+    # Then
+    assert expected
+    assert hits == expected

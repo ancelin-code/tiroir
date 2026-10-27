@@ -13,10 +13,11 @@ from functools import cache
 import Stemmer  # pyrefly: ignore[missing-import]  (a binary module, no stubs)
 
 # Bump when the output of this module changes, so existing indexes rebuild.
-VERSION = 1
+VERSION = 2
 
 _WORD = re.compile(r"\w+")
 _DIGIT_RUN = re.compile(r"\d+(?:[ .\-]\d+)+")
+_COMPOUND = re.compile(r"[^\W_]+(?:[.\-][^\W_]+)+")
 _LIGATURES = str.maketrans({"œ": "oe", "æ": "ae"})
 
 # Snowball algorithm per store language code; other languages are not stemmed.
@@ -92,15 +93,39 @@ def normalize(text: str, language: str) -> str:
     return " ".join(terms(text, language))
 
 
-def identifier_tokens(text: str) -> list[str]:
+def _joined_codes(folded: str) -> tuple[list[str], str]:
+    """The joined codes of folded text and the text with them blanked out.
+
+    A code is letters and digits joined by dashes or dots, holding both
+    (`fac-2026-001` gives `fac2026001`).
+    """
+    codes: list[str] = []
+
+    def take(match: re.Match[str]) -> str:
+        token = match.group()
+        if any(c.isdigit() for c in token) and any(c.isalpha() for c in token):
+            codes.append(re.sub(r"[.\-]", "", token))
+            return " "
+        return token
+
+    return codes, _COMPOUND.sub(take, folded)
+
+
+def identifier_tokens(text: str, *, query: bool = False) -> list[str]:
     """The identifier tokens of `text`, unstemmed, without repeats.
 
     Runs of digits split by spaces, dots or dashes are joined (`123 456 789`
     gives `123456789`, `2026-001` gives `2026001`); any other word holding a
-    digit is kept as it is (`c001`).
+    digit is kept as it is (`c001`). A code mixing letters and digits joined
+    by dashes or dots gives its joined form (`FAC-2026-001` gives
+    `fac2026001`) and, when indexing, also its digit run (`2026001`), so a
+    query for the number alone finds it. With `query`, only the joined form
+    is returned: `C-001` must not match `D-001` through the shared `001`.
     """
     folded = fold(text)
-    found = [re.sub(r"\D", "", run) for run in _DIGIT_RUN.findall(folded)]
-    rest = _DIGIT_RUN.sub(" ", folded)
+    codes, blanked = _joined_codes(folded)
+    source = blanked if query else folded
+    found = codes + [re.sub(r"\D", "", run) for run in _DIGIT_RUN.findall(source)]
+    rest = _DIGIT_RUN.sub(" ", source)
     found += [w for w in _WORD.findall(rest) if any(c.isdigit() for c in w)]
     return list(dict.fromkeys(found))
