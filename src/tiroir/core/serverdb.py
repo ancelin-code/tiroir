@@ -51,6 +51,10 @@ class MemberDisabled(ServerDbError):
     """The member is already disabled."""
 
 
+class StoreNameTaken(ServerDbError):
+    """A store already has this name."""
+
+
 class ClientStoreFull(ServerDbError):
     """Every registered client still has a live token or code: none can go."""
 
@@ -64,6 +68,24 @@ class Member:
     must_change_password: bool
     created: str
     disabled: str | None
+
+
+@dataclass(frozen=True)
+class StoreRow:
+    id: str
+    name: str
+    audience: str
+    language: str
+    created: str
+
+
+@dataclass(frozen=True)
+class GrantedStore:
+    """A store a member holds a grant on."""
+
+    store: StoreRow
+    access: str
+    is_default: bool
 
 
 def load_migrations() -> tuple[str, ...]:
@@ -219,6 +241,16 @@ def find_member(conn: sqlite3.Connection, handle: str) -> Member | None:
 def list_members(conn: sqlite3.Connection) -> list[Member]:
     rows = conn.execute(f"SELECT {_COLUMNS} FROM members ORDER BY created, handle")
     return [_member(row) for row in rows.fetchall()]
+
+
+def find_active_member(conn: sqlite3.Connection, ref: str) -> Member | None:
+    """The enabled member whose id or handle is `ref`, read now."""
+    row = conn.execute(
+        f"SELECT {_COLUMNS} FROM members WHERE (id = ? OR handle = ?)"
+        " AND disabled IS NULL",
+        (ref, ref),
+    ).fetchone()
+    return None if row is None else _member(row)
 
 
 def has_admin(conn: sqlite3.Connection) -> bool:
@@ -623,3 +655,93 @@ def web_session_member(
 
 def delete_web_session(conn: sqlite3.Connection, session_hash: str) -> None:
     conn.execute("DELETE FROM web_sessions WHERE session_hash = ?", (session_hash,))
+
+
+_STORE_COLUMNS = "id, name, audience, language, created"
+
+
+def insert_store(
+    conn: sqlite3.Connection, store_id: str, name: str, audience: str, language: str
+) -> StoreRow:
+    """Record a store; raises `StoreNameTaken` when the name is used."""
+    created = datetime.now(UTC).isoformat(timespec="seconds")
+    try:
+        conn.execute(
+            f"INSERT INTO stores ({_STORE_COLUMNS}) VALUES (?, ?, ?, ?, ?)",
+            (store_id, name, audience, language, created),
+        )
+    except sqlite3.IntegrityError as error:
+        raise StoreNameTaken(name) from error
+    logger.debug("store recorded: {}", store_id)
+    return StoreRow(store_id, name, audience, language, created)
+
+
+def find_store(conn: sqlite3.Connection, name: str) -> StoreRow | None:
+    row = conn.execute(
+        f"SELECT {_STORE_COLUMNS} FROM stores WHERE name = ?", (name,)
+    ).fetchone()
+    return None if row is None else StoreRow(*row)
+
+
+def list_stores(conn: sqlite3.Connection) -> list[StoreRow]:
+    rows = conn.execute(f"SELECT {_STORE_COLUMNS} FROM stores ORDER BY created, name")
+    return [StoreRow(*row) for row in rows.fetchall()]
+
+
+def granted_stores(conn: sqlite3.Connection, member_id: str) -> list[GrantedStore]:
+    """The stores the member holds a grant on, by name."""
+    rows = conn.execute(
+        "SELECT s.id, s.name, s.audience, s.language, s.created, g.access,"
+        " d.store_id IS NOT NULL FROM grants g JOIN stores s ON s.id = g.store_id"
+        " LEFT JOIN default_stores d ON d.member = g.member AND d.store_id = g.store_id"
+        " WHERE g.member = ? ORDER BY s.name",
+        (member_id,),
+    )
+    return [GrantedStore(StoreRow(*r[:5]), r[5], bool(r[6])) for r in rows.fetchall()]
+
+
+def store_grant_holders(conn: sqlite3.Connection, store_id: str) -> list[str]:
+    """The ids of the members holding a grant on the store."""
+    rows = conn.execute("SELECT member FROM grants WHERE store_id = ?", (store_id,))
+    return [row[0] for row in rows.fetchall()]
+
+
+def set_grant(
+    conn: sqlite3.Connection,
+    member_id: str,
+    store_id: str,
+    access: str,
+    *,
+    make_default: bool = False,
+) -> None:
+    """Give the member `access` to the store, replacing any earlier grant.
+
+    With `make_default` the store becomes the member's one default store.
+    """
+    conn.execute("BEGIN")
+    conn.execute(
+        "INSERT INTO grants (member, store_id, access) VALUES (?, ?, ?)"
+        " ON CONFLICT (member, store_id) DO UPDATE SET access = excluded.access",
+        (member_id, store_id, access),
+    )
+    if make_default:
+        conn.execute(
+            "INSERT OR REPLACE INTO default_stores (member, store_id) VALUES (?, ?)",
+            (member_id, store_id),
+        )
+    conn.commit()
+    logger.debug("grant set: member {} store {} {}", member_id, store_id, access)
+
+
+def delete_grant(conn: sqlite3.Connection, member_id: str, store_id: str) -> bool:
+    """Remove the member's grant on the store; false when there was none."""
+    conn.execute("BEGIN")
+    cursor = conn.execute(
+        "DELETE FROM grants WHERE member = ? AND store_id = ?", (member_id, store_id)
+    )
+    conn.execute(
+        "DELETE FROM default_stores WHERE member = ? AND store_id = ?",
+        (member_id, store_id),
+    )
+    conn.commit()
+    return cursor.rowcount > 0
