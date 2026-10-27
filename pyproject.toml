@@ -48,11 +48,13 @@ select = ["E", "F", "I", "B", "UP", "SIM", "T20"]
 
 [tool.pyrefly]
 preset = "strict"
+search-path = ["tests/integration"]
 project-includes = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib"]
+pythonpath = ["tests/integration"]
 
 [tool.importlinter]
 root_package = "tiroir"
