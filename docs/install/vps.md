@@ -42,17 +42,18 @@ Edit `.env`:
 |---|---|
 | `TIROIR_DOMAIN` | Your domain name, without `https://`. The server's public address, `https://<domain>`, is also its OAuth issuer, so it cannot change later without every member signing in again. Use `localhost` to try the stack on your own machine. |
 | `TIROIR_ACME_EMAIL` | The e-mail address given to the certificate authority. |
-| `TIROIR_TAG` | The image tag to run. Leave `latest`, or pin a release such as `v0.1.0`. |
+| `TIROIR_TAG` | The tag given to the image built in step 3. Leave `latest`. |
 | `TIROIR_PROXY_SUBNET` | The private subnet of the stack's network, where Caddy runs. Leave the default unless it clashes with a network of yours. |
 
 ## 3. Start the stack
 
 ```sh
-docker compose up -d
+docker compose up -d --build
 ```
 
-Compose pulls the `tiroir` image and Caddy, then starts both. Check that they
-run and that the server answers through Caddy:
+No tiroir image is published yet, so Compose builds it from the cloned
+repository (a few minutes on the first run), pulls Caddy, then starts both.
+Check that they run and that the server answers through Caddy:
 
 ```sh
 docker compose ps
@@ -63,11 +64,10 @@ The health route answers `{"status": "ready", "version": …}`. Caddy needs a fe
 seconds to obtain the certificate on the first start; if `curl` fails with a
 TLS error, wait and retry, and read `docker compose logs caddy` if it persists.
 
-To try the stack locally with `TIROIR_DOMAIN=localhost`, build the image
-instead of pulling it, and let `curl` accept Caddy's local certificate:
+To try the stack locally with `TIROIR_DOMAIN=localhost`, let `curl` accept
+Caddy's local certificate:
 
 ```sh
-docker compose up -d --build
 curl --insecure https://localhost/health
 ```
 
@@ -122,11 +122,12 @@ To force it, run `docker compose exec tiroir tiroir admin index`.
 
 ## 7. Upgrade
 
-In this version, an upgrade pulls the new image and restarts the stack:
+In this version, an upgrade fetches the new code, rebuilds the image and
+restarts the stack:
 
 ```sh
-docker compose pull
-docker compose up -d
+git pull
+docker compose up -d --build
 ```
 
 The server migrates its database at start, and logs a warning if the database
