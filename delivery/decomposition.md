@@ -75,6 +75,15 @@ What makes a server safe to keep for years: erasure, links, schema
 evolution, mirrors and clones, backup, restore and upgrade, and the
 documentation that lets others run it.
 
+When this milestone is cut, it also measures two costs of keeping each store
+as a Git repository, a choice re-examined and kept on 2026-10-27 (ADR-010).
+Unreasonable numbers reopen ADR-010:
+
+- **Purge:** the time of a drawer purge (ADR-011: `git filter-repo`, clean-up
+  and the force-push to one mirror) on a store of P6's size.
+- **Growth:** the repository's size on disk and the time of one log append
+  once a drawer holds a few thousand entries, before and after a repack.
+
 **Exit:** A purge removes a drawer from the store, its history, the index and a mirror, and masks links to it; a migration moves drawers with links still resolving; a technical member clones a store read-only; a server is backed up, restored on another machine and upgraded to a new version with its data migrated; a fresh administrator follows the documentation from a new VPS to a connected member in under 30 minutes.
 **Requirements:** A1, A6, A7, E1, E2, E3, E4, E5, L1, L2, L3, L4, L5, L6, I4, I5, Y4d, Y4e, Y5, Y6, Y7, S5, U3, P5, D1, D2, H2, H3
 **Epics:**
