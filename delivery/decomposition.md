@@ -39,6 +39,22 @@ and context injection (the Claude Code hook as an `mcp_tool` call, the memory
 skill) is the second host integration to prove. Both need the skeleton's
 store, index and MCP endpoint.
 
+When this milestone is cut, its evaluation also settles four questions that
+the review of `search-001` (PR #18) left open against the literature:
+
+- **French stemmer:** Snowball (ADR-007) against a light, inflection-only
+  stemmer, which Savoy's CLEF experiments found as good for French, on the
+  French set.
+- **Fusion:** RRF with k = 60 (ADR-007, Cormack et al. 2009) against a convex
+  combination of normalised scores, which Bruch et al. (2023) found better and
+  less parameter-sensitive with few labelled queries; and k itself.
+- **Lexical floor:** the "half the content terms" rule has no published
+  grounding beyond `minimum_should_match` practice; tune it on the negative
+  queries.
+- **Identifier joining:** digit runs split by single spaces join across
+  neighbouring numbers (`123 456 789 2 dossiers` gives `1234567892`); decide
+  whether to bound the join, for example to SIREN and SIRET lengths.
+
 **Exit:** On the skeleton's server, the evaluation command reports recall@5, MRR and negative false positives for lexical, semantic and hybrid retrieval on both bundled sets, hybrid at least as good as each alone; the default model is the evaluation's winner within the 4 GB budget; in Claude Code with the plugin installed, a prompt naming a client injects that client's summary within 300 ms at p95; in Claude Desktop, the memory skill makes the agent use tiroir on a scripted set (C7) and record new facts (W7).
 **Requirements:** R1, R2, R4, R4a, R5, R7, S3, S4, C1, C1a, C2, C3, C4, C5, C5a, C5b, C5c, C6, C7, W7, U2, V1, V2, V3, V4, P1, P2, P3, P4, P6
 **Epics:**
