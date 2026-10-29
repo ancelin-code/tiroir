@@ -12,8 +12,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
       - run: mise run check
       - name: Audit locked dependencies
         run: uv export --frozen --no-emit-project -o /tmp/requirements.txt && uvx pip-audit --disable-pip --no-deps -r /tmp/requirements.txt
