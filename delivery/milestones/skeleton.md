@@ -1,7 +1,7 @@
 # Milestone review: skeleton
 
-**Status:** draft
-**Approved by:**
+**Status:** approved
+**Approved by:** Ancelin Serre, 2026-10-29
 
 ## Exit criterion
 
