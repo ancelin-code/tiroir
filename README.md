@@ -8,8 +8,12 @@ engagements. With tiroir, the organisation of memory is configuration: you
 declare your drawers, and tiroir handles storage, indexing, retrieval, context
 injection and sync.
 
-> **Status: design phase.** Nothing is usable yet. The requirements are being
-> written; code follows once the design is approved.
+**Documentation: [ancelin-code.github.io/tiroir](https://ancelin-code.github.io/tiroir/)**
+
+> **Status: 0.1.0.** One server for a team, run with Docker Compose behind
+> Caddy, administered from the command line, and connected to Claude Desktop
+> with tools to search, read and log memory. More surfaces follow, milestone
+> by milestone.
 
 ## Principles
 
@@ -29,22 +33,37 @@ injection and sync.
 - **Humans own the synthesis.** Logs are append-only, and summaries change only
   after you confirm.
 
+## Quickstart
+
+On a VPS with Docker Compose and a domain name pointing to it:
+
+```sh
+git clone https://github.com/ancelin-code/tiroir.git && cd tiroir
+cp .env.example .env    # set TIROIR_DOMAIN and TIROIR_ACME_EMAIL
+docker compose pull && docker compose up -d
+docker compose exec tiroir tiroir admin init
+```
+
+Then follow the documentation:
+
+- [Install tiroir on a VPS](https://ancelin-code.github.io/tiroir/install/vps/):
+  the stack, the first administrator, a member and a store.
+- [Connect Claude Desktop](https://ancelin-code.github.io/tiroir/connect/claude-desktop/):
+  add the server as a custom connector and sign in.
+- [CLI reference](https://ancelin-code.github.io/tiroir/reference/cli/): the
+  administration commands.
+
 ## Planned surfaces
 
-- An MCP server for Claude Desktop and Claude Code.
-- A Claude Code adapter with automatic context injection.
+- A member CLI and the Claude Code plugin with automatic context injection.
 - A guided setup skill that interviews you and designs your schema.
-- A CLI for setup, indexing, search, validation, sync, migration and erasure.
-- Presets for developers and accounting firms, with synthetic data.
+- Presets beyond accounting firms, starting with developers.
 
-## Install
+## Contributing
 
-- [Install tiroir on a VPS](docs/install/vps.md): the Compose stack behind
-  Caddy, the first administrator, a member and a store from a preset.
-- [Connect Claude Desktop](docs/connect/claude-desktop.md): add the server as
-  a custom connector and sign in.
-- [Skeleton exit check](docs/milestones/skeleton-exit-check.md): the checklist
-  run against a real server at the end of the first milestone.
+`mise run check` runs every check, `mise run stack` builds the image from the
+working tree and starts the stack, and `mise run docs:serve` previews the
+documentation site.
 
 ## Project documents
 
@@ -52,6 +71,8 @@ injection and sync.
 - [Requirements](delivery/prd.md): what v1 must do, checkably.
 - [Prior art review](docs/research/prior-art.md): what we learned from existing
   agent memory projects.
+- [Skeleton exit check](docs/milestones/skeleton-exit-check.md): the checklist
+  run against a real server at the end of the first milestone.
 
 ## Licence
 

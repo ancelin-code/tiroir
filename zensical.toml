@@ -1,0 +1,32 @@
+# The user documentation site, built by `mise run docs:build` and published to
+# GitHub Pages from `develop` by .github/workflows/docs.yml.
+[project]
+site_name = "tiroir"
+site_description = "Configurable, scoped memory for AI agents, served to your team from your own server."
+site_url = "https://ancelin-code.github.io/tiroir/"
+repo_url = "https://github.com/ancelin-code/tiroir"
+edit_uri = "edit/develop/docs"
+copyright = "Apache-2.0"
+strict = true
+
+# The site is the user documentation only: the brief, the research notes and
+# the milestone notes stay in the repository, out of the site.
+exclude_docs = """
+brief.md
+research/
+milestones/
+"""
+
+nav = [
+  { "Home" = "index.md" },
+  { "Install (VPS)" = "install/vps.md" },
+  { "Connect (Claude Desktop)" = "connect/claude-desktop.md" },
+  { "Reference (CLI)" = "reference/cli.md" },
+]
+
+[project.plugins.llmstxt]
+markdown_description = "tiroir is a self-hosted memory server for teams of AI agents: install it on a VPS, connect Claude Desktop, and administer it from the command line."
+
+[project.plugins.llmstxt.sections]
+"Get started" = ["index.md", "install/vps.md", "connect/claude-desktop.md"]
+Reference = ["reference/cli.md"]

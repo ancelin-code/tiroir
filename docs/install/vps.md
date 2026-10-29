@@ -22,8 +22,10 @@ database server and sends no e-mail.
 
 ## 1. Get the stack
 
-The stack is three files: `compose.yaml`, `deploy/Caddyfile` and `.env`. Clone
-the repository on the VPS:
+The stack is three files: `compose.yaml`, `deploy/Caddyfile` and `.env`. The
+tiroir image itself is published at `ghcr.io/ancelin-code/tiroir`, for `amd64`
+and `arm64`, so nothing is built on the VPS. Clone the repository on the VPS to
+get the three files:
 
 ```sh
 git clone https://github.com/ancelin-code/tiroir.git
@@ -42,18 +44,18 @@ Edit `.env`:
 |---|---|
 | `TIROIR_DOMAIN` | Your domain name, without `https://`. The server's public address, `https://<domain>`, is also its OAuth issuer, so it cannot change later without every member signing in again. Use `localhost` to try the stack on your own machine. |
 | `TIROIR_ACME_EMAIL` | The e-mail address given to the certificate authority. |
-| `TIROIR_TAG` | The tag given to the image built in step 3. Leave `latest`. |
+| `TIROIR_TAG` | The image tag to run: `latest` follows the newest release, a release tag such as `v0.1.0` stays on that release until you change it. |
 | `TIROIR_PROXY_SUBNET` | The private subnet of the stack's network, where Caddy runs. Leave the default unless it clashes with a network of yours. |
 
 ## 3. Start the stack
 
 ```sh
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
-No tiroir image is published yet, so Compose builds it from the cloned
-repository (a few minutes on the first run), pulls Caddy, then starts both.
-Check that they run and that the server answers through Caddy:
+Compose pulls the tiroir image for the tag in `.env` and the Caddy image, then
+starts both. Check that they run and that the server answers through Caddy:
 
 ```sh
 docker compose ps
@@ -122,12 +124,14 @@ To force it, run `docker compose exec tiroir tiroir admin index`.
 
 ## 7. Upgrade
 
-In this version, an upgrade fetches the new code, rebuilds the image and
-restarts the stack:
+An upgrade updates the stack files, pulls the new image and restarts the
+stack. With `TIROIR_TAG=latest`, this moves to the newest release; with a
+release tag, change `TIROIR_TAG` in `.env` to the new release first.
 
 ```sh
 git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 The server migrates its database at start, and logs a warning if the database

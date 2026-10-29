@@ -17,6 +17,15 @@ decision records, documentation, code, comments and commit messages. The only
 exception is user-facing memory content, whose language is a store setting
 (for example French for the `accounting-firm` preset's synthetic data).
 
+## User documentation
+
+The user documentation site is built from `docs/` with Zensical
+(`zensical.toml`, `mise run docs:build`) and published to GitHub Pages from
+`develop`. A milestone is not delivered until the site documents what it adds.
+Each task that changes user-visible behaviour (a command, an option, an
+output, an installation or upgrade step, a connector flow) updates its page in
+the same change, and a new page goes into the `nav` of `zensical.toml`.
+
 ## Tests
 
 Tests are either unit or integration tests, and live in the matching folder:

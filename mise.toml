@@ -46,6 +46,16 @@ run = "uv run pip-licenses --partial-match --fail-on=GPL --ignore-packages pygit
 description = "Run every check"
 depends = ["lint", "typecheck", "test"]
 
+[tasks."docs:build"]
+description = "Build the documentation site into site/, failing on any warning"
+depends = ["sync"]
+run = "uv run zensical build --clean --strict"
+
+[tasks."docs:serve"]
+description = "Serve the documentation site locally, rebuilt on each change"
+depends = ["sync"]
+run = "uv run zensical serve"
+
 [tasks.serve]
 description = "Run the server"
 depends = ["sync"]
