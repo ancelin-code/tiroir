@@ -16,3 +16,6 @@ __pycache__/
 # Local server data
 /data/
 .env
+
+# Documentation site, built by `mise run docs:build`
+/site/
