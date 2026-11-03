@@ -1,4 +1,4 @@
-# CLI reference
+# CLI Reference
 
 tiroir is administered with one command, `tiroir`, that ships inside the
 server's image. In version 0.1.0 it holds the **administration CLI**,
@@ -168,7 +168,7 @@ usage: tiroir admin stores add [-h] --audience {personal,team}
 | `--audience {personal,team}` | `personal`: one member's memory. `team`: shared by the members you grant. Required. |
 | `--language LANGUAGE` | The language of the store's content, such as `fr` or `en`. Required. |
 | `--owner OWNER` | The handle of the member who owns the store. They get write access, and the store becomes their default. Required for a `personal` store. |
-| `--preset PRESET` | The preset the store starts from. In 0.1.0, every store starts from a preset, and the only one is `accounting-firm`, filled with invented client drawers. |
+| `--preset PRESET` | The preset the store starts from. In 0.1.0, every store starts from a preset: the bundled `accounting-firm`, filled with invented client drawers, or one of your own ([Custom Schema](../admin/custom-schema.md)). |
 
 Creates the store and indexes it.
 

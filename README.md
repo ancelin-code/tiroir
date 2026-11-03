@@ -46,11 +46,11 @@ docker compose exec tiroir tiroir admin init
 
 Then follow the documentation:
 
-- [Install tiroir on a VPS](https://ancelin-code.github.io/tiroir/install/vps/):
+- [Installation Guide](https://ancelin-code.github.io/tiroir/install/vps/):
   the stack, the first administrator, a member and a store.
 - [Connect Claude Desktop](https://ancelin-code.github.io/tiroir/connect/claude-desktop/):
   add the server as a custom connector and sign in.
-- [CLI reference](https://ancelin-code.github.io/tiroir/reference/cli/): the
+- [CLI Reference](https://ancelin-code.github.io/tiroir/reference/cli/): the
   administration commands.
 
 ## Planned surfaces

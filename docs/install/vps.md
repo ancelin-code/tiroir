@@ -1,4 +1,4 @@
-# Install tiroir on a VPS
+# Installation Guide
 
 This guide takes an administrator from an empty Linux server to a running
 tiroir server with a first member and a first store. It covers the skeleton
@@ -110,7 +110,8 @@ docker compose exec tiroir tiroir admin stores list
 `--preset accounting-firm` fills the store with the bundled synthetic dataset:
 23 invented client drawers, each with a summary and a log. The owner gets
 access to the store. The command prints `store: alice-memory`, and the list
-shows `alice-memory  personal  fr  1 members`.
+shows `alice-memory  personal  fr  1 members`. To organise a store's memory
+your own way, see [Custom Schema](../admin/custom-schema.md).
 
 The store is a bare Git repository, `/data/stores/<id>.git` in the container,
 named by an id rather than by the store's name:

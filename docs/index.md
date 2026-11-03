@@ -21,19 +21,22 @@ Markdown in a Git repository on your own server; nothing leaves it.
   certificate by itself. The image is published for `amd64` and `arm64`.
 - Members, personal and team stores, and read or write access, managed with
   the [administration CLI](reference/cli.md) inside the container.
-- A store starts from a preset. The one bundled preset, `accounting-firm`,
-  comes with invented client drawers to try the server on.
+- A store starts from a preset. The bundled preset, `accounting-firm`, comes
+  with invented client drawers to try the server on; you can write a
+  [custom schema](admin/custom-schema.md) as a preset of your own.
 - Claude Desktop connects as a custom connector, signs in with OAuth, and gets
   four tools: search, read, log, and the list of the stores the member can
   reach.
 
 ## Where to start
 
-1. [Install tiroir on a VPS](install/vps.md): the stack, the first
+1. [Installation Guide](install/vps.md): the stack, the first
    administrator, a member and a store.
 2. [Connect Claude Desktop](connect/claude-desktop.md): add the server as a
    custom connector and sign in.
-3. [CLI reference](reference/cli.md): every administration command, with its
+3. [Custom Schema](admin/custom-schema.md): organise a store's memory your
+   own way.
+4. [CLI Reference](reference/cli.md): every administration command, with its
    arguments and an example.
 
 tiroir is open source under the Apache-2.0 licence; its code is on

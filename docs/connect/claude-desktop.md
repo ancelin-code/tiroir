@@ -8,7 +8,7 @@ apps and the Claude Code plugin come later.
 You need:
 
 - the server's address, `https://<domain>`, from the administrator who
-  followed [Install tiroir on a VPS](../install/vps.md);
+  followed [Installation Guide](../install/vps.md);
 - your handle and the initial password the administrator gave you;
 - a Claude plan that allows custom connectors.
 
