@@ -65,13 +65,15 @@
   --path-planned: #78909c;
   --path-goal: #ce93d8;
 }
-.md-typeset ol.path {
+[dir] .md-typeset ol.path {
   display: flex;
   margin: 2.5rem 0 2rem;
   padding: 0;
   list-style: none;
 }
-.md-typeset .path__step {
+/* Material gives every list item a left margin, with a selector that is
+   hard to outrank: without this the steps are pushed to the right. */
+.md-typeset ol.path > .path__step {
   position: relative;
   flex: 1;
   margin: 0;
@@ -143,8 +145,8 @@
   100% { box-shadow: 0 0 0 0.7rem rgb(255 160 0 / 0%); }
 }
 @media (max-width: 44.9375em) {
-  .md-typeset ol.path { flex-direction: column; margin-left: 0.5rem; }
-  .md-typeset .path__step { padding: 0 0 1.6rem 2.6rem; text-align: left; }
+  [dir] .md-typeset ol.path { flex-direction: column; margin-left: 0.5rem; }
+  .md-typeset ol.path > .path__step { padding: 0 0 1.6rem 2.6rem; text-align: left; }
   .path__what { min-height: 0; }
   .path__step::before {
     top: -1.6rem;
