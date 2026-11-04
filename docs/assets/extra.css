@@ -1,0 +1,23 @@
+/* Keep the first column of a table, the term, the code or the message, on one
+   line: only the explanation next to it wraps. */
+.md-typeset table:not([class]) td:first-child,
+.md-typeset table:not([class]) th:first-child {
+  white-space: nowrap;
+}
+
+/* Status of a milestone on the roadmap. */
+.status {
+  display: inline-block;
+  padding: 0.05em 0.7em;
+  border-radius: 1em;
+  font-size: 0.8em;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid currentcolor;
+}
+.status-done { color: #2e7d32; background: rgb(46 125 50 / 12%); }
+.status-next { color: #b26a00; background: rgb(255 160 0 / 15%); }
+.status-planned { color: #607d8b; background: rgb(96 125 139 / 12%); }
+[data-md-color-scheme="slate"] .status-done { color: #81c784; }
+[data-md-color-scheme="slate"] .status-next { color: #ffb74d; }
+[data-md-color-scheme="slate"] .status-planned { color: #b0bec5; }

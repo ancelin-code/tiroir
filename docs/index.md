@@ -23,7 +23,7 @@ Markdown in a Git repository on your own server; nothing leaves it.
   the [administration CLI](reference/cli.md) inside the container.
 - A store starts from a preset. The bundled preset, `accounting-firm`, comes
   with invented client drawers to try the server on; you can write a
-  [custom schema](admin/custom-schema.md) as a preset of your own.
+  [custom schema](install/custom-schema.md) as a preset of your own.
 - Claude Desktop connects as a custom connector, signs in with OAuth, and gets
   four tools: search, read, log, and the list of the stores the member can
   reach.
@@ -34,7 +34,7 @@ Markdown in a Git repository on your own server; nothing leaves it.
    administrator, a member and a store.
 2. [Connect Claude Desktop](connect/claude-desktop.md): add the server as a
    custom connector and sign in.
-3. [Custom Schema](admin/custom-schema.md): organise a store's memory your
+3. [Custom Schema](install/custom-schema.md): organise a store's memory your
    own way.
 4. [CLI Reference](reference/cli.md): every administration command, with its
    arguments and an example.

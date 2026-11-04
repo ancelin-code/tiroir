@@ -1,8 +1,8 @@
 # Installation Guide
 
 This guide takes an administrator from an empty Linux server to a running
-tiroir server with a first member and a first store. It covers the skeleton
-milestone: one server, one stack, started with Docker Compose behind Caddy,
+tiroir server with a first member and a first store. It covers what 0.1.0 does:
+one server, one stack, started with Docker Compose behind Caddy,
 which obtains the HTTPS certificate by itself. To connect Claude Desktop
 afterwards, follow [Connect Claude Desktop](../connect/claude-desktop.md).
 
@@ -111,7 +111,7 @@ docker compose exec tiroir tiroir admin stores list
 23 invented client drawers, each with a summary and a log. The owner gets
 access to the store. The command prints `store: alice-memory`, and the list
 shows `alice-memory  personal  fr  1 members`. To organise a store's memory
-your own way, see [Custom Schema](../admin/custom-schema.md).
+your own way, see [Custom Schema](custom-schema.md).
 
 The store is a bare Git repository, `/data/stores/<id>.git` in the container,
 named by an id rather than by the store's name:

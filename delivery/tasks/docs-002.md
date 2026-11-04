@@ -30,7 +30,7 @@ Files this task is expected to touch:
   labels, the new page in `nav` and in the `llmstxt` sections)
 - `docs/assets/` (the logo, an SVG of an old-fashioned wooden chest of drawers,
   usable on the light and dark palettes; also the favicon)
-- `docs/admin/custom-schema.md` (new: administrator guide to a custom schema)
+- `docs/install/custom-schema.md` (new: administrator guide to a custom schema)
 - `docs/reference/cli.md`, `docs/install/vps.md`, `docs/index.md` (only the
   links, and the sentences that say a store can only start from the bundled
   preset)
@@ -53,7 +53,7 @@ Out of scope:
   Custom Schema); Client Installation (Connect Claude Desktop, where other
   hosts such as Claude Code will join later); CLI Reference. The page titles
   match their navigation labels, Home excepted.
-- `docs/admin/custom-schema.md` walks an administrator, from a clean 0.1.0
+- `docs/install/custom-schema.md` walks an administrator, from a clean 0.1.0
   install, through: copying the bundled preset as a starting point, editing
   `tiroir.yaml` (drawer types, fields, templates, sections, detection,
   injection) with a pointer to the field reference, making the directory

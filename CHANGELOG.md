@@ -1,7 +1,8 @@
 # Changelog
 
-All notable changes to tiroir are recorded here. Set the date on a release's
-heading when tagging it.
+All notable changes to tiroir are recorded here.
+
+<!-- Set the date on a release's heading when tagging it. -->
 
 ## [Unreleased]
 

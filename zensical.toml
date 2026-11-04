@@ -8,6 +8,7 @@ repo_url = "https://github.com/ancelin-code/tiroir"
 edit_uri = "edit/develop/docs"
 copyright = "Apache-2.0"
 strict = true
+extra_css = ["assets/extra.css"]
 
 # The site is the user documentation only: the brief, the research notes and
 # the milestone notes stay in the repository, out of the site.
@@ -21,12 +22,17 @@ nav = [
   { "Home" = "index.md" },
   { "Server Installation" = [
     { "Installation Guide" = "install/vps.md" },
-    { "Custom Schema" = "admin/custom-schema.md" },
+    { "Custom Schema" = "install/custom-schema.md" },
   ] },
   { "Client Installation" = [
     { "Connect Claude Desktop" = "connect/claude-desktop.md" },
   ] },
-  { "CLI Reference" = "reference/cli.md" },
+  { "Reference" = [
+    { "CLI Reference" = "reference/cli.md" },
+    { "Schema Reference" = "reference/schema.md" },
+  ] },
+  { "Roadmap" = "roadmap.md" },
+  { "Changelog" = "changelog.md" },
 ]
 
 [project.theme]
@@ -61,6 +67,6 @@ toggle.name = "Switch to system preference"
 markdown_description = "tiroir is a self-hosted memory server for teams of AI agents: install it on a VPS, connect Claude Desktop, and administer it from the command line."
 
 [project.plugins.llmstxt.sections]
-"Get started" = ["index.md", "install/vps.md", "connect/claude-desktop.md"]
-Administration = ["admin/custom-schema.md"]
-Reference = ["reference/cli.md"]
+"Get started" = ["index.md", "install/vps.md", "connect/claude-desktop.md", "install/custom-schema.md"]
+Reference = ["reference/cli.md", "reference/schema.md"]
+Project = ["roadmap.md", "changelog.md"]

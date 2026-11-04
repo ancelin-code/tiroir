@@ -21,8 +21,8 @@ below leave out the `docker compose exec tiroir` prefix.
     A member CLI, run on a member's own machine against the server (search,
     read, log, proposals), and the administration commands for embeddings,
     mirrors, evaluation, backups and the server's state are planned for later
-    releases. They are not in 0.1.0, and this page will document them when they
-    are.
+    releases (see the [Roadmap](../roadmap.md)). They are not in 0.1.0, and this
+    page will document them when they are.
 
 ## `tiroir`
 
@@ -168,7 +168,7 @@ usage: tiroir admin stores add [-h] --audience {personal,team}
 | `--audience {personal,team}` | `personal`: one member's memory. `team`: shared by the members you grant. Required. |
 | `--language LANGUAGE` | The language of the store's content, such as `fr` or `en`. Required. |
 | `--owner OWNER` | The handle of the member who owns the store. They get write access, and the store becomes their default. Required for a `personal` store. |
-| `--preset PRESET` | The preset the store starts from. In 0.1.0, every store starts from a preset: the bundled `accounting-firm`, filled with invented client drawers, or one of your own ([Custom Schema](../admin/custom-schema.md)). |
+| `--preset PRESET` | The preset the store starts from. In 0.1.0, every store starts from a preset: the bundled `accounting-firm`, filled with invented client drawers, or one of your own ([Custom Schema](../install/custom-schema.md)). |
 
 Creates the store and indexes it.
 

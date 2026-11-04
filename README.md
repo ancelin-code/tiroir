@@ -59,6 +59,8 @@ Then follow the documentation:
 - A guided setup skill that interviews you and designs your schema.
 - Presets beyond accounting firms, starting with developers.
 
+The [Roadmap](https://ancelin-code.github.io/tiroir/roadmap/) says what each milestone brings.
+
 ## Contributing
 
 `mise run check` runs every check, `mise run stack` builds the image from the
