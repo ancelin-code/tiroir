@@ -53,7 +53,7 @@ members' next request (A4).
 |---|---|
 | `tiroir admin init` | First start: create the first administrator and print a one-time sign-in link (ADR-016). |
 | `tiroir admin members [list\|add <handle> --name <n> [--admin]\|disable <handle>\|reset-password <handle>]` | Members (A3). |
-| `tiroir admin stores [list\|add <name> --audience personal\|team --language <code> [--owner <handle>]]` | Stores. A `personal` store needs `--owner`. |
+| `tiroir admin stores [list\|add <name> --audience personal\|team --language <code> [--owner <handle>] [--preset <name>]]` | Stores. A `personal` store needs `--owner`. `--preset` names the preset the store starts from (S4, S7); the skeleton requires it (`preset.required`), and an unknown name is `preset.unknown`. |
 | `tiroir admin grant <handle> <store> read\|write` / `tiroir admin revoke <handle> <store>` | Access (A2). |
 | `tiroir admin embedding <store> [--model <id> \| --external <base-url> --external-model <name> --key-env <VAR>]` | Embedding choice per store (R4). |
 | `tiroir admin mirrors <store> [list\|add <url>\|remove <id>]` | Mirrors (Y6); `add` over SSH prints the public key. |

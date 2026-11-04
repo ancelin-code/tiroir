@@ -27,3 +27,25 @@
 [data-md-color-scheme="slate"] .status-done { color: #81c784; }
 [data-md-color-scheme="slate"] .status-next { color: #ffb74d; }
 [data-md-color-scheme="slate"] .status-planned { color: #b0bec5; }
+
+/* Daubenton, by Olivier Dolbeau (Velvetyne, SIL OFL): a serif revived from the
+   letters engraved on the Grande Galerie de l'Evolution in Paris. One weight,
+   used for the site name and the headings. The licence is next to the file. */
+@font-face {
+  font-family: Daubenton;
+  src: url("fonts/Daubenton.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.md-header__topic:first-child .md-ellipsis,
+.md-typeset h1,
+.md-typeset h2 {
+  font-family: Daubenton, Georgia, serif;
+  font-weight: 400;
+  font-synthesis: none;
+}
+.md-header__topic:first-child .md-ellipsis {
+  font-size: 1.15em;
+  letter-spacing: 0.02em;
+}

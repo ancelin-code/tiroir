@@ -92,3 +92,7 @@ documentation site.
 ## Licence
 
 [Apache-2.0](LICENSE).
+
+The documentation site sets its headings in [Daubenton](https://velvetyne.fr/fonts/daubenton/),
+by Olivier Dolbeau ([Velvetyne](https://velvetyne.fr/)), under the SIL Open Font
+License 1.1 (`docs/assets/fonts/OFL-Daubenton.txt`).
