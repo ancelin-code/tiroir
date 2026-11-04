@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to tiroir are recorded here.
+All notable changes to Tiroir are recorded here.
 
 <!-- Set the date on a release's heading when tagging it. -->
 

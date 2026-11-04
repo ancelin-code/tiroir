@@ -1,11 +1,24 @@
-# tiroir
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="Tiroir logo: a wooden chest of drawers" width="120">
+</p>
+
+<h1 align="center">Tiroir</h1>
+
+<p align="center">
+  <a href="https://github.com/ancelin-code/tiroir/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/ancelin-code/tiroir"></a>
+  <a href="https://github.com/ancelin-code/tiroir/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ancelin-code/tiroir/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/ancelin-code/tiroir/actions/workflows/docs.yml"><img alt="Docs" src="https://github.com/ancelin-code/tiroir/actions/workflows/docs.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/github/license/ancelin-code/tiroir"></a>
+  <img alt="Python 3.13+" src="https://img.shields.io/badge/python-3.13%2B-blue">
+  <a href="https://github.com/ancelin-code/tiroir/pkgs/container/tiroir"><img alt="Container image" src="https://img.shields.io/badge/ghcr.io-amd64%20%7C%20arm64-informational"></a>
+</p>
 
 **Configurable, scoped memory for AI agents.** *Tiroir* is French for *drawer*.
 
 Give any AI agent a memory organised the way its user actually works. A developer
 thinks in repositories, an accountant in client files, a consultant in
-engagements. With tiroir, the organisation of memory is configuration: you
-declare your drawers, and tiroir handles storage, indexing, retrieval, context
+engagements. With Tiroir, the organisation of memory is configuration: you
+declare your drawers, and Tiroir handles storage, indexing, retrieval, context
 injection and sync.
 
 **Documentation: [ancelin-code.github.io/tiroir](https://ancelin-code.github.io/tiroir/)**
@@ -28,7 +41,7 @@ injection and sync.
 - **You choose where your memory lives.** It syncs to a Git repository you
   pick, self-hosted or hosted. Nothing else leaves your machine: no telemetry,
   no third-party APIs, and embeddings are computed locally.
-- **Git without Git.** tiroir syncs your memory across machines and team
+- **Git without Git.** Tiroir syncs your memory across machines and team
   members through Git, and you never have to touch Git.
 - **Humans own the synthesis.** Logs are append-only, and summaries change only
   after you confirm.

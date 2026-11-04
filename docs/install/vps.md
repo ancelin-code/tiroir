@@ -1,7 +1,7 @@
 # Installation Guide
 
 This guide takes an administrator from an empty Linux server to a running
-tiroir server with a first member and a first store. It covers what 0.1.0 does:
+Tiroir server with a first member and a first store. It covers what 0.1.0 does:
 one server, one stack, started with Docker Compose behind Caddy,
 which obtains the HTTPS certificate by itself. To connect Claude Desktop
 afterwards, follow [Connect Claude Desktop](../connect/claude-desktop.md).
@@ -17,13 +17,13 @@ afterwards, follow [Connect Claude Desktop](../connect/claude-desktop.md).
 - A shell on the VPS, and an e-mail address for the certificate authority's
   expiry notices.
 
-tiroir keeps all its state in one Docker volume, `tiroir-data`. It needs no
+Tiroir keeps all its state in one Docker volume, `tiroir-data`. It needs no
 database server and sends no e-mail.
 
 ## 1. Get the stack
 
 The stack is three files: `compose.yaml`, `deploy/Caddyfile` and `.env`. The
-tiroir image itself is published at `ghcr.io/ancelin-code/tiroir`, for `amd64`
+Tiroir image itself is published at `ghcr.io/ancelin-code/tiroir`, for `amd64`
 and `arm64`, so nothing is built on the VPS. Clone the repository on the VPS to
 get the three files:
 
@@ -54,7 +54,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Compose pulls the tiroir image for the tag in `.env` and the Caddy image, then
+Compose pulls the Tiroir image for the tag in `.env` and the Caddy image, then
 starts both. Check that they run and that the server answers through Caddy:
 
 ```sh
@@ -81,8 +81,8 @@ docker compose exec tiroir tiroir admin init
 
 The command creates the administrator, handle `admin`, and prints an initial
 password once. Copy it now; it cannot be shown again. At the first sign-in,
-tiroir asks for a new password of at least 12 characters. Choose a strong one:
-tiroir has no second factor in this version, so limit who can reach the server
+Tiroir asks for a new password of at least 12 characters. Choose a strong one:
+Tiroir has no second factor in this version, so limit who can reach the server
 if you can.
 
 `tiroir admin init` refuses to run twice (`the server already has an

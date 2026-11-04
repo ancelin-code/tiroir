@@ -1,12 +1,12 @@
 # Custom Schema
 
-By default, a tiroir store is organised like the bundled `accounting-firm`
+By default, a Tiroir store is organised like the bundled `accounting-firm`
 example: one drawer per client. If your team works differently, you describe
-your own organisation in a file, the **schema**, and tiroir does the rest. This
+your own organisation in a file, the **schema**, and Tiroir does the rest. This
 page takes you from nothing to a working store with your own drawers. Count
 about 30 minutes for a first try.
 
-!!! note "No guided setup in 0.1.0"
+!!! warning "No guided setup in 0.1.0"
 
     You write the schema by hand, on the server. A guided *init*, where Claude
     interviews a member in their language and proposes the schema, is planned
@@ -16,7 +16,7 @@ about 30 minutes for a first try.
 
 ## The ideas in five minutes
 
-tiroir organises memory the way people organise paper files, and keeps it as
+Tiroir organises memory the way people organise paper files, and keeps it as
 plain Markdown files in a Git repository.
 
 | Term | What it is | Example |
@@ -162,7 +162,7 @@ drawer_types:
 Read it from the top:
 
 - **`tiroir: 1`** is the version of the file format. Always `1`.
-- **`store`** is a placeholder. When you create a store, tiroir generates its
+- **`store`** is a placeholder. When you create a store, Tiroir generates its
   `id` and takes `name`, `audience` and `language` from the command line, so
   what you write there is replaced. Keep the block, with valid values, and
   write a `description`: it is the one line kept in the store.
@@ -170,7 +170,7 @@ Read it from the top:
   Claude, not a list of files.
 - **`drawer_types`** is the heart of the file: one entry per kind of drawer,
   here `repo`. The key (`repo`) is the type's name.
-    - **`label`, `label_plural`, `description`** are the words used when tiroir
+    - **`label`, `label_plural`, `description`** are the words used when Tiroir
       talks about the type. Write them in the store's language.
     - **`path`** says where a drawer lives. `repos/{name}` means that the
       drawer of a repository whose `name` is `billing-api` is the folder
@@ -182,7 +182,7 @@ Read it from the top:
       text). `required: true` makes it mandatory, and `pattern` restricts a
       `text` field to a regular expression.
     - **`summary`** names the template of a new summary and its **sections**,
-      the level-2 headings, in order. They are the units that tiroir finds,
+      the level-2 headings, in order. They are the units that Tiroir finds,
       reads and, later, merges.
     - **`log`** names the template of a new log entry. Optional.
     - **`detect.names`** lists the fields whose values designate the drawer in a
@@ -303,7 +303,7 @@ this per drawer.
 
 !!! warning "Keep to the schema"
 
-    In 0.1.0, tiroir checks `tiroir.yaml` when it creates a store, but it does
+    In 0.1.0, Tiroir checks `tiroir.yaml` when it creates a store, but it does
     not check the drawers of `data/`: a misspelled section or a value that is
     not in an `enum` goes through. Copy the template headings exactly.
 
@@ -363,7 +363,7 @@ docker compose exec tiroir sh -c '
 /data/stores/6f0c5a3e-….git: # my-team-memory
 ```
 
-Then print the table of contents that tiroir generated, `MEMORY.md`, and the
+Then print the table of contents that Tiroir generated, `MEMORY.md`, and the
 list of files, with the folder you found:
 
 ```sh
@@ -388,9 +388,9 @@ Each drawer is a folder holding `summary.md`, its summary, and `log/`, its dated
 !!! info "What is `MEMORY.md`?"
 
     It is the store's table of contents: its name, a short explanation of the
-    layout, and one line per drawer. tiroir generates it from the drawers, so
+    layout, and one line per drawer. Tiroir generates it from the drawers, so
     you never write it, and a hand edit would be overwritten. It exists so that
-    a person can open the store without tiroir, in a text editor or as an
+    a person can open the store without Tiroir, in a text editor or as an
     Obsidian vault, and find their way around.
 
 Then connect as `alice` with [Claude Desktop](../connect/claude-desktop.md) and

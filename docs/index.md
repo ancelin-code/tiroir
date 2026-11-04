@@ -1,16 +1,16 @@
-# tiroir
+# Tiroir
 
 **Configurable, scoped memory for AI agents.** *Tiroir* is French for *drawer*.
 
-tiroir gives AI agents a memory organised the way their users actually work. A
+Tiroir gives AI agents a memory organised the way their users actually work. A
 developer thinks in repositories, an accountant in client files, a consultant
-in engagements. With tiroir, that organisation is configuration: a store holds
-drawers, and tiroir handles storage, indexing and retrieval. Memory is plain
+in engagements. With Tiroir, that organisation is configuration: a store holds
+drawers, and Tiroir handles storage, indexing and retrieval. Memory is plain
 Markdown in a Git repository on your own server; nothing leaves it.
 
 ## Who it is for
 
-- **Administrators** who run one tiroir server for themselves or their team, on
+- **Administrators** who run one Tiroir server for themselves or their team, on
   a VPS with Docker Compose.
 - **Members** of that team who connect Claude Desktop to the server, then ask
   Claude to search their memory and to log what happened.
@@ -39,5 +39,5 @@ Markdown in a Git repository on your own server; nothing leaves it.
 4. [CLI Reference](reference/cli.md): every administration command, with its
    arguments and an example.
 
-tiroir is open source under the Apache-2.0 licence; its code is on
+Tiroir is open source under the Apache-2.0 licence; its code is on
 [GitHub](https://github.com/ancelin-code/tiroir).

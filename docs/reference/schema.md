@@ -86,7 +86,7 @@ generated from the fields and is not part of the template.
 
 ## Errors
 
-When tiroir creates a store, it checks `tiroir.yaml` and reports **every**
+When Tiroir creates a store, it checks `tiroir.yaml` and reports **every**
 violation, each with its key path and its line.
 
 | Code | When |

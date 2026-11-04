@@ -1,6 +1,6 @@
 # CLI Reference
 
-tiroir is administered with one command, `tiroir`, that ships inside the
+Tiroir is administered with one command, `tiroir`, that ships inside the
 server's image. In version 0.1.0 it holds the **administration CLI**,
 `tiroir admin`, which you run in the server's container from the directory of
 the stack:

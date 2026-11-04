@@ -1,7 +1,7 @@
 # The user documentation site, built by `mise run docs:build` and published to
 # GitHub Pages from `develop` by .github/workflows/docs.yml.
 [project]
-site_name = "tiroir"
+site_name = "Tiroir"
 site_description = "Configurable, scoped memory for AI agents, served to your team from your own server."
 site_url = "https://ancelin-code.github.io/tiroir/"
 repo_url = "https://github.com/ancelin-code/tiroir"
@@ -64,7 +64,7 @@ toggle.icon = "lucide/moon"
 toggle.name = "Switch to system preference"
 
 [project.plugins.llmstxt]
-markdown_description = "tiroir is a self-hosted memory server for teams of AI agents: install it on a VPS, connect Claude Desktop, and administer it from the command line."
+markdown_description = "Tiroir is a self-hosted memory server for teams of AI agents: install it on a VPS, connect Claude Desktop, and administer it from the command line."
 
 [project.plugins.llmstxt.sections]
 "Get started" = ["index.md", "install/vps.md", "connect/claude-desktop.md", "install/custom-schema.md"]

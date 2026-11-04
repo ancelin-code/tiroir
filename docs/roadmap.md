@@ -1,9 +1,9 @@
 # Roadmap
 
-tiroir is delivered in **milestones**: four slices of the product, each working
+Tiroir is delivered in **milestones**: four slices of the product, each working
 from end to end on a real server. A milestone ends with a check on a running
 server and a review of what it taught, and only then is the next one cut. This
-page says where tiroir stands, what each milestone brings, and what 0.1.0 cannot
+page says where Tiroir stands, what each milestone brings, and what 0.1.0 cannot
 do yet.
 
 No dates are promised. A milestone ships when its check holds, and the
@@ -11,22 +11,22 @@ No dates are promised. A milestone ships when its check holds, and the
 
 ## Where we are
 
-**tiroir 0.1.0, released on 29 October 2026, delivers the first milestone.** The
+**Tiroir 0.1.0, released on 29 October 2026, delivers the first milestone.** The
 second, *Retrieval*, is next, and is being prepared.
 
-| | Milestone | Status | What it brings |
-|---|---|---|---|
-| 1 | [Skeleton](#1-skeleton) | <span class="status status-done">Delivered in 0.1.0</span> | A server that works end to end: install, sign in, search, log |
-| 2 | [Retrieval](#2-retrieval) | <span class="status status-next">Next</span> | Search by meaning, and memory that Claude uses by itself |
-| 3 | [Team](#3-team) | <span class="status status-planned">Planned</span> | Several members, safe shared writing, and a guided setup |
-| 4 | [Operations](#4-operations) | <span class="status status-planned">Planned</span> | A server you can keep, back up, upgrade and erase from |
+| Milestone | Status | What it brings |
+|---|---|---|
+| [1. Skeleton](#1-skeleton) | <span class="status status-done">Delivered in 0.1.0</span> | A server that works end to end: install, sign in, search, log |
+| [2. Retrieval](#2-retrieval) | <span class="status status-next">Next</span> | Search by meaning, and memory that Claude uses by itself |
+| [3. Team](#3-team) | <span class="status status-planned">Planned</span> | Several members, safe shared writing, and a guided setup |
+| [4. Operations](#4-operations) | <span class="status status-planned">Planned</span> | A server you can keep, back up, upgrade and erase from |
 
 ## 1. Skeleton { #1-skeleton }
 
 <span class="status status-done">Delivered in 0.1.0</span>
 
-The riskiest pieces first: can Claude Desktop reach a server you installed,
-sign a member in, and read and write their memory?
+The foundations: a server you install, members who sign in, and Claude Desktop
+reading and writing their memory.
 
 - Install the server on a VPS with Docker Compose, behind HTTPS that Caddy
   obtains by itself.
@@ -54,7 +54,7 @@ Finding the right memory, and having Claude use it without being asked.
 - **Claude Code**: a plugin, installed in one command, that recognises the
   drawer a prompt is about and puts its summary in front of Claude in under
   300 ms.
-- **A memory skill for Claude Desktop**, so that Claude searches tiroir when it
+- **A memory skill for Claude Desktop**, so that Claude searches Tiroir when it
   should and records what is worth remembering without being asked.
 - **A second bundled preset, for developers**, next to `accounting-firm`.
 - **A folder for your own presets**, that the server reads directly: no copying
@@ -62,7 +62,7 @@ Finding the right memory, and having Claude use it without being asked.
 
 *The check:* on the milestone-one server, the evaluation reports how well
 keyword, semantic and combined search find the right entry, and Claude Code and
-Claude Desktop use tiroir on a scripted set of prompts.
+Claude Desktop use Tiroir on a scripted set of prompts.
 
 ## 3. Team { #3-team }
 
@@ -120,11 +120,12 @@ all succeed.
 | The schema of an existing store cannot be changed. | [Operations](#4-operations) |
 | No backup, restore or upgrade commands, and no erasure. | [Operations](#4-operations) |
 
-## What is not planned
+## Not planned for now
 
-- A web interface to read or edit memory: the web administration page manages
-  members, stores and access only.
-- Hosting tiroir for several organisations: one server serves one organisation.
+- A web interface to read or edit memory. The web administration page manages
+  members, stores and access only; reading and editing memory could be studied
+  later.
+- Hosting Tiroir for several organisations: one server serves one organisation.
 - Permissions per drawer: access is per store, so content with a different
   readership goes in a different store.
 - Single sign-on with an outside identity provider.

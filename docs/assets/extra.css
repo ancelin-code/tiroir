@@ -5,6 +5,12 @@
   white-space: nowrap;
 }
 
+/* Align the first line of every cell on a baseline, so that a cell starting
+   with code does not look lower than its neighbours. */
+.md-typeset table:not([class]) td {
+  vertical-align: baseline;
+}
+
 /* Status of a milestone on the roadmap. */
 .status {
   display: inline-block;
