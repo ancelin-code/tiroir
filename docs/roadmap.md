@@ -12,7 +12,8 @@ No dates are promised. A milestone ships when its check holds, and the
 ## Where we are
 
 **Tiroir 0.1.0, released on 29 October 2026, delivers the first milestone.** The
-second, *Retrieval*, is next, and is being prepared.
+second, *Retrieval*, is next, and is being prepared. The four milestones lead to
+[Tiroir 1.0.0](#the-path-to-100).
 
 | Milestone | Status | What it brings |
 |---|---|---|
@@ -20,6 +21,44 @@ second, *Retrieval*, is next, and is being prepared.
 | [2. Retrieval](#2-retrieval) | <span class="status status-next">Next</span> | Search by meaning, and memory that Claude uses by itself |
 | [3. Team](#3-team) | <span class="status status-planned">Planned</span> | Several members, safe shared writing, and a guided setup |
 | [4. Operations](#4-operations) | <span class="status status-planned">Planned</span> | A server you can keep, back up, upgrade and erase from |
+| [1.0.0](#the-path-to-100) | <span class="status status-goal">Goal</span> | The four milestones delivered and reviewed |
+
+## The path to 1.0.0 { #the-path-to-100 }
+
+Tiroir **1.0.0 is the release at the end of the fourth milestone**: the one where
+everything planned for the first version exists, and each milestone has been
+checked on a running server and reviewed.
+
+```text
+0.1.0 ───▶ Retrieval ───▶ Team ───▶ Operations ───▶ 1.0.0
+Skeleton                                            the goal
+```
+
+Each milestone ends in a release numbered `0.x`. Until 1.0.0, treat the releases
+as early ones and read the [Changelog](changelog.md) before you upgrade.
+
+When 1.0.0 is out, you will be able to:
+
+- install a server on a VPS or on your own machine, with documentation that
+  takes a new administrator to a connected member in under 30 minutes;
+- give each member exactly the stores they should reach, and let them use those
+  stores from Claude Desktop, Claude on the web and mobile, and Claude Code;
+- search by meaning as well as by keyword, and have Claude use the memory
+  without being asked;
+- shape a store with a guided setup, and change its schema later;
+- back up a server, restore it on another machine, upgrade it with one command,
+  and erase what must be erased.
+
+Some principles hold at every release, and will still hold at 1.0.0:
+
+- Plain Markdown files in a Git repository are the only source of truth. Every
+  index can be rebuilt from them.
+- Nothing leaves your server except to the mirrors and the external embedding
+  service you configure, for certificate issuance, and to fetch the public
+  description of an application that connects. There is no telemetry.
+- A member never reaches a store they were not granted, and nothing is written to
+  a team store without confirmation.
+- No memory content appears in commit messages, logs or error messages.
 
 ## 1. Skeleton { #1-skeleton }
 

@@ -69,21 +69,22 @@ repository. Replace "repository" with your own answer as you go.
 
 ## Step 1: Prepare the presets folder
 
-The bundled presets live inside the container image. Mounting your own folder
-over them would hide them, so copy them out first. From the directory that holds
-`compose.yaml`, with the stack running:
+The `presets/` folder of the repository you cloned in the
+[Installation Guide](vps.md#1-get-the-stack) holds the bundled presets, the same
+ones as the image. You will add yours next to them. From the directory that
+holds `compose.yaml`:
 
 ```sh
-docker compose cp tiroir:/app/presets ./presets
 mkdir -p presets/my-team/templates presets/my-team/shared
 ```
 
-`presets/accounting-firm` is now yours to read: it is a complete example of
-every file below. `my-team` is the name you will give to `--preset`: lowercase
+`presets/accounting-firm` is a complete example of every file below, so keep it
+open as you read. `my-team` is the name you will give to `--preset`: lowercase
 letters, digits and hyphens, starting with a letter or a digit.
 
-Now tell Compose to use this folder. Create `compose.override.yaml` next to
-`compose.yaml`; Compose reads it automatically:
+The server reads its presets from inside the container, so tell Compose to use
+this folder instead of the one in the image. Create `compose.override.yaml`
+next to `compose.yaml`; Compose reads it automatically:
 
 ```yaml
 services:
@@ -426,8 +427,9 @@ file under `repos/billing-api/log/`. If all three work, your schema works.
   Changing the preset afterwards does not change the stores already made from
   it, and 0.1.0 has no command to change the schema of an existing store; schema
   (see the [Roadmap](../roadmap.md#4-operations)). Settle the schema on a test store before the real one.
-- **Upgrades.** With `./presets` mounted, the presets of a new image no longer
-  appear. Copy them out again if you want them.
+- **Upgrades.** With `./presets` mounted, the server reads the presets of your
+  clone, not those of the image. A `git pull` brings the new bundled presets
+  and leaves yours alone.
 
 See the [CLI Reference](../reference/cli.md) for `stores add` and `grant`, and
 the [Installation Guide](../install/vps.md) for the stack.

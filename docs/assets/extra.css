@@ -24,9 +24,11 @@
 .status-done { color: #2e7d32; background: rgb(46 125 50 / 12%); }
 .status-next { color: #b26a00; background: rgb(255 160 0 / 15%); }
 .status-planned { color: #607d8b; background: rgb(96 125 139 / 12%); }
+.status-goal { color: #6a1b9a; background: rgb(106 27 154 / 10%); }
 [data-md-color-scheme="slate"] .status-done { color: #81c784; }
 [data-md-color-scheme="slate"] .status-next { color: #ffb74d; }
 [data-md-color-scheme="slate"] .status-planned { color: #b0bec5; }
+[data-md-color-scheme="slate"] .status-goal { color: #ce93d8; }
 
 /* Daubenton, by Olivier Dolbeau (Velvetyne, SIL OFL): a serif revived from the
    letters engraved on the Grande Galerie de l'Evolution in Paris. One weight,
