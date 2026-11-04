@@ -45,13 +45,13 @@ checked on a running server and reviewed.
   <li class="path__step path__step--planned">
     <a href="#3-team"><span class="path__node"></span>
     <span class="path__name">Team</span>
-    <span class="path__what">Members and safe writing</span>
+    <span class="path__what">Shared writing</span>
     <span class="path__state">Planned</span></a>
   </li>
   <li class="path__step path__step--planned">
     <a href="#4-operations"><span class="path__node"></span>
     <span class="path__name">Operations</span>
-    <span class="path__what">Backup, upgrade, erase</span>
+    <span class="path__what">Keep it for years</span>
     <span class="path__state">Planned</span></a>
   </li>
   <li class="path__step path__step--goal">

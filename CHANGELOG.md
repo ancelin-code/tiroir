@@ -2,9 +2,11 @@
 
 All notable changes to Tiroir are recorded here.
 
-<!-- Set the date on a release's heading when tagging it. -->
-
-## [Unreleased]
+<!--
+  Changes that are not released yet go under a `## [Unreleased]` heading above
+  the latest release. When tagging, turn it into the version and its date; when
+  nothing is left unreleased, leave the heading out: it is shown on the site.
+-->
 
 ## [0.1.0] - 2026-10-29
 
