@@ -14,7 +14,7 @@ review: []
 
 The 0.1.0 release works end to end, and its guides (`docs/install/vps.md`,
 `docs/connect/claude-desktop.md`) sit as loose Markdown. Users need a site, and
-every later milestone must update it. Delivery Kit's launch plan picked
+every later milestone must update it. Établi's launch plan picked
 Zensical on GitHub Pages with the `llms.txt` output; follow the same choice.
 The requirements are in [the PRD](../prd.md).
 

@@ -1,47 +1,47 @@
 {
   "version": 1,
   "skills": {
-    "delivery-decompose": {
-      "source": "ancelin-code/delivery-kit",
+    "etabli-decompose": {
+      "source": "ancelin-code/etabli",
       "ref": "v0.1.0",
       "sourceType": "github",
-      "skillPath": ".agents/skills/delivery-decompose/SKILL.md",
-      "computedHash": "66c175fb51441d84b0bca9966630353d08196c2a753d0dbb61b6b28791ce741c"
+      "skillPath": ".agents/skills/etabli-decompose/SKILL.md",
+      "computedHash": "200b1cfd602d7aae0ad2b6cd0301ee66e370a32eb31abb6d803553508c8c22a3"
     },
-    "delivery-implement": {
-      "source": "ancelin-code/delivery-kit",
+    "etabli-implement": {
+      "source": "ancelin-code/etabli",
       "ref": "v0.1.0",
       "sourceType": "github",
-      "skillPath": ".agents/skills/delivery-implement/SKILL.md",
-      "computedHash": "60b8dc8f9804b90d26d85bc64a1e239be50e78cc1987df9d7b6d430a34f43119"
+      "skillPath": ".agents/skills/etabli-implement/SKILL.md",
+      "computedHash": "1a1428d8a27e125d33ea660f422e2783cda869b1905d52ca3226dd15e92a990f"
     },
-    "delivery-orchestrator": {
-      "source": "ancelin-code/delivery-kit",
+    "etabli-orchestrator": {
+      "source": "ancelin-code/etabli",
       "ref": "v0.1.0",
       "sourceType": "github",
-      "skillPath": ".agents/skills/delivery-orchestrator/SKILL.md",
-      "computedHash": "b169ba84bce0b7ce7c9ff4fa42dd85dbaf72042e8139407702a12acc7f9dad66"
+      "skillPath": ".agents/skills/etabli-orchestrator/SKILL.md",
+      "computedHash": "04b9443767d64a7e6c9afdfb1fc529cf55ff39d8544dd87d372a936aac2d4673"
     },
-    "delivery-refine": {
-      "source": "ancelin-code/delivery-kit",
+    "etabli-refine": {
+      "source": "ancelin-code/etabli",
       "ref": "v0.1.0",
       "sourceType": "github",
-      "skillPath": ".agents/skills/delivery-refine/SKILL.md",
-      "computedHash": "4a0f56cc750aeb7fb7d4037cb6684036ecf34bdf5a7311bfe374f561dc0d64c3"
+      "skillPath": ".agents/skills/etabli-refine/SKILL.md",
+      "computedHash": "ba334e9d4c6f79f2e357bdabd1391ab5fbfca3370e449c2016a85b272f6470c7"
     },
-    "delivery-spec": {
-      "source": "ancelin-code/delivery-kit",
+    "etabli-spec": {
+      "source": "ancelin-code/etabli",
       "ref": "v0.1.0",
       "sourceType": "github",
-      "skillPath": ".agents/skills/delivery-spec/SKILL.md",
-      "computedHash": "8e345269753d15552d824fdc6bcdd55626398ca527c92ad8457c74ad73817dce"
+      "skillPath": ".agents/skills/etabli-spec/SKILL.md",
+      "computedHash": "3be4ac82a0ffc75cbb294b6fa9bfc69811eb1d74809420730555d1230d9019e5"
     },
-    "delivery-status": {
-      "source": "ancelin-code/delivery-kit",
+    "etabli-status": {
+      "source": "ancelin-code/etabli",
       "ref": "v0.1.0",
       "sourceType": "github",
-      "skillPath": ".agents/skills/delivery-status/SKILL.md",
-      "computedHash": "937b9bc54fc7aff80e82dcc27cbe263bfd780e643c4fb154673cf16b67b84955"
+      "skillPath": ".agents/skills/etabli-status/SKILL.md",
+      "computedHash": "9619bdb627987bfdb953dcb8b6d5d9cd7f9b78bbba3cf903897657643367022c"
     }
   }
 }
