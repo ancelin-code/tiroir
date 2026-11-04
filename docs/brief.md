@@ -160,7 +160,7 @@ Real deployments keep their stores (data and configuration) on their own servers
 ## 13. Working process
 
 1. ~~Read this brief, study the prior art in §3, and ask clarifying questions.~~
-2. ~~Write the requirements with Delivery Kit~~ (`delivery/prd.md`, approved).
+2. ~~Write the requirements with Établi~~ (`delivery/prd.md`, approved).
 3. Record the architecture decisions and write the interface contracts (in review).
 4. Decompose into milestones and tasks, then implement milestone by milestone. Start with a walking skeleton: one server, one store, append a note and find it from Claude Desktop, to prove the remote connector, sign-in and deployment first.
 
