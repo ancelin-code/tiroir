@@ -2,6 +2,8 @@
 
 **Status:** accepted
 **Date:** 2026-10-22
+**Amended:** 2026-11-04. `tiroir admin init` prints an initial password, as
+ADR-015 decides, not a sign-in link; the skeleton was built that way.
 
 ## Context
 
@@ -26,7 +28,8 @@ infrastructure, so they need the server reachable from the internet.
   administration page and kept in `server.db`.
 - **First start:** `docker compose up -d`, then
   `docker compose exec tiroir tiroir admin init`, which creates the first
-  administrator and prints a one-time sign-in link. The default model is
+  administrator, handle `admin`, and prints its initial password once, to change
+  at the first sign-in (ADR-015). The default model is
   downloaded in the background (ADR-006).
 - **Own machine:** the same stack. Two documented ways to get HTTPS (A5):
   - a tunnel (for example Cloudflare Tunnel or Tailscale Funnel) giving a

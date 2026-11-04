@@ -1,6 +1,6 @@
 # Connect Claude Desktop
 
-A member adds tiroir to Claude Desktop as a custom connector, signs in once,
+A member adds Tiroir to Claude Desktop as a custom connector, signs in once,
 and then asks Claude to search and write their memory. Nothing is installed on
 the member's machine. This page covers Claude Desktop only; the web and mobile
 apps and the Claude Code plugin come later.
@@ -8,7 +8,7 @@ apps and the Claude Code plugin come later.
 You need:
 
 - the server's address, `https://<domain>`, from the administrator who
-  followed [Install tiroir on a VPS](../install/vps.md);
+  followed [Installation Guide](../install/vps.md);
 - your handle and the initial password the administrator gave you;
 - a Claude plan that allows custom connectors.
 
@@ -22,13 +22,13 @@ You need:
    |---|---|
    | Name | `tiroir`, or any name you like. |
    | Remote MCP server URL | The server's address followed by `/mcp`, for example `https://memoire.example.org/mcp`. |
-   | OAuth Client ID, OAuth Client Secret (under **Advanced settings**, if shown) | Leave both empty. tiroir registers the application by itself. |
+   | OAuth Client ID, OAuth Client Secret (under **Advanced settings**, if shown) | Leave both empty. Tiroir registers the application by itself. |
 
 4. Confirm with **Add**.
 
 ## 2. Sign in
 
-Choosing **Connect** on the new connector opens your browser on the tiroir
+Choosing **Connect** on the new connector opens your browser on the Tiroir
 server. Two pages follow, both plain and titled "tiroir":
 
 1. **Sign in**: a form with *Handle* and *Password*. Enter your handle and the
@@ -49,10 +49,10 @@ administrator disables your account.
 Start a new conversation, enable the connector's tools if Claude asks, and
 ask:
 
-> Search my tiroir memory for "échéance TVA".
+> Search my Tiroir memory for "échéance TVA".
 
 Claude calls `tiroir_search` and shows the hits, each naming its store,
-drawer, and date. If nothing matches, tiroir says so explicitly instead of
+drawer, and date. If nothing matches, Tiroir says so explicitly instead of
 returning loose results.
 
 ## 4. A first log entry

@@ -1,0 +1,164 @@
+/* Keep the first column of a table, the term, the code or the message, on one
+   line: only the explanation next to it wraps. */
+.md-typeset table:not([class]) td:first-child,
+.md-typeset table:not([class]) th:first-child {
+  white-space: nowrap;
+}
+
+/* Align the first line of every cell on a baseline, so that a cell starting
+   with code does not look lower than its neighbours. */
+.md-typeset table:not([class]) td {
+  vertical-align: baseline;
+}
+
+/* Status of a milestone on the roadmap. */
+.status {
+  display: inline-block;
+  padding: 0.05em 0.7em;
+  border-radius: 1em;
+  font-size: 0.8em;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid currentcolor;
+}
+.status-done { color: #2e7d32; background: rgb(46 125 50 / 12%); }
+.status-next { color: #b26a00; background: rgb(255 160 0 / 15%); }
+.status-planned { color: #607d8b; background: rgb(96 125 139 / 12%); }
+.status-goal { color: #6a1b9a; background: rgb(106 27 154 / 10%); }
+[data-md-color-scheme="slate"] .status-done { color: #81c784; }
+[data-md-color-scheme="slate"] .status-next { color: #ffb74d; }
+[data-md-color-scheme="slate"] .status-planned { color: #b0bec5; }
+[data-md-color-scheme="slate"] .status-goal { color: #ce93d8; }
+
+/* Daubenton, by Olivier Dolbeau (Velvetyne, SIL OFL): a serif revived from the
+   letters engraved on the Grande Galerie de l'Evolution in Paris. One weight,
+   used for the site name and the headings. The licence is next to the file. */
+@font-face {
+  font-family: Daubenton;
+  src: url("fonts/Daubenton.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.md-header__topic:first-child .md-ellipsis,
+.md-typeset h1,
+.md-typeset h2 {
+  font-family: Daubenton, Georgia, serif;
+  font-weight: 400;
+  font-synthesis: none;
+}
+.md-header__topic:first-child .md-ellipsis {
+  font-size: 1.15em;
+  letter-spacing: 0.02em;
+}
+
+/* The path to 1.0.0 on the roadmap: a line of steps, vertical on a phone. */
+.path {
+  --path-done: #2e7d32;
+  --path-next: #b26a00;
+  --path-planned: #90a4ae;
+  --path-goal: #6a1b9a;
+}
+[data-md-color-scheme="slate"] .path {
+  --path-done: #81c784;
+  --path-next: #ffb74d;
+  --path-planned: #78909c;
+  --path-goal: #ce93d8;
+}
+[dir] .md-typeset ol.path {
+  display: flex;
+  margin: 2.5rem 0 2rem;
+  padding: 0;
+  list-style: none;
+}
+/* Material gives every list item a left margin, with a selector that is
+   hard to outrank: without this the steps are pushed to the right. */
+.md-typeset ol.path > .path__step {
+  position: relative;
+  flex: 1;
+  margin: 0;
+  padding-top: 2.6rem;
+  text-align: center;
+}
+.md-typeset .path__step a {
+  display: block;
+  padding: 0 0.3rem;
+  color: inherit;
+  text-decoration: none;
+}
+.path__step::before {
+  content: "";
+  position: absolute;
+  top: 0.9rem;
+  right: 50%;
+  width: 100%;
+  border-top: 3px solid var(--path-done);
+}
+.path__step:first-child::before { display: none; }
+.path__step--planned::before,
+.path__step--goal::before {
+  border-top: 3px dashed var(--path-planned);
+}
+.path__node {
+  position: absolute;
+  top: 0.2rem;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-left: -0.7rem;
+  border: 3px solid var(--path-planned);
+  border-radius: 50%;
+  background: var(--md-default-bg-color);
+}
+.path__step--done .path__node { border-color: var(--path-done); background: var(--path-done); }
+.path__step--next .path__node { border-color: var(--path-next); }
+.path__step--goal .path__node {
+  top: -0.3rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  margin-left: -1.2rem;
+  border-color: var(--path-goal);
+}
+.path__node img { width: 1.5rem; height: 1.5rem; }
+.path__name { display: block; font-weight: 700; }
+.path__what { display: block; min-height: 2.6em; font-size: 0.8em; line-height: 1.3; opacity: 0.85; }
+.path__state {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.path__step--done .path__state { color: var(--path-done); }
+.path__step--next .path__state { color: var(--path-next); }
+.path__step--planned .path__state { color: var(--path-planned); }
+.path__step--goal .path__state { color: var(--path-goal); }
+@media (prefers-reduced-motion: no-preference) {
+  .path__step--next .path__node { animation: path-pulse 2s ease-out infinite; }
+}
+@keyframes path-pulse {
+  0% { box-shadow: 0 0 0 0 rgb(255 160 0 / 55%); }
+  100% { box-shadow: 0 0 0 0.7rem rgb(255 160 0 / 0%); }
+}
+@media (max-width: 44.9375em) {
+  [dir] .md-typeset ol.path { flex-direction: column; margin-left: 0.5rem; }
+  .md-typeset ol.path > .path__step { padding: 0 0 1.6rem 2.6rem; text-align: left; }
+  .path__what { min-height: 0; }
+  .path__step::before {
+    top: -1.6rem;
+    right: auto;
+    left: 0.7rem;
+    width: 0;
+    height: 1.9rem;
+    border-top: 0;
+    border-left: 3px solid var(--path-done);
+  }
+  .path__step--planned::before,
+  .path__step--goal::before { border-top: 0; border-left: 3px dashed var(--path-planned); }
+  .path__node { top: 0.1rem; left: 0; margin-left: 0; }
+  .path__step--goal .path__node { top: -0.4rem; left: -0.5rem; margin-left: 0; }
+}
