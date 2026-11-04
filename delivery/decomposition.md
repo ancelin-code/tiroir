@@ -1,11 +1,11 @@
 # Decomposition: tiroir v1
 
-**Status:** draft
-**Approved by:** none yet for the revision of 2026-11-04 (S7 added to `retrieval`); last approved by Ancelin Serre, 2026-10-22 (milestone plan and the skeleton's cut)
+**Status:** approved
+**Approved by:** Ancelin Serre, 2026-11-04 (S7 added to `retrieval`); first approved 2026-10-22 (milestone plan and the skeleton's cut)
 
 ## Source
 
-- Requirements: [`delivery/prd.md`](prd.md) (approved 2026-10-22).
+- Requirements: [`delivery/prd.md`](prd.md) (approved 2026-11-04).
 - Decision records: [`delivery/decisions/`](decisions/), ADR-001 to ADR-016
   (accepted 2026-10-22). The skeleton relies most on ADR-002 (Python, tooling,
   container), ADR-003 (store format), ADR-004 (server database), ADR-005 and

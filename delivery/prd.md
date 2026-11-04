@@ -1,9 +1,10 @@
 # tiroir — Requirements
 
-**Status:** draft
-**Approved by:** none yet for the revision of 2026-11-04 (S7 added); last approved by Ancelin Serre, 2026-10-22 (revises the local-first version
-approved on 2026-10-21: v1 is a self-hosted server; amended the same day:
-OAuth client metadata fetching added to the network invariant, and W7)
+**Status:** approved
+**Approved by:** Ancelin Serre, 2026-11-04 (S7 added); first approved 2026-10-22 (revises
+the local-first version approved on 2026-10-21: v1 is a self-hosted server;
+amended the same day: OAuth client metadata fetching added to the network
+invariant, and W7)
 
 ## Problem
 
