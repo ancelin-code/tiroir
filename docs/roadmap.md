@@ -29,10 +29,38 @@ Tiroir **1.0.0 is the release at the end of the fourth milestone**: the one wher
 everything planned for the first version exists, and each milestone has been
 checked on a running server and reviewed.
 
-```text
-0.1.0 ───▶ Retrieval ───▶ Team ───▶ Operations ───▶ 1.0.0
-Skeleton                                            the goal
-```
+<ol class="path">
+  <li class="path__step path__step--done">
+    <a href="#1-skeleton"><span class="path__node"></span>
+    <span class="path__name">0.1.0</span>
+    <span class="path__what">Skeleton</span>
+    <span class="path__state">Delivered</span></a>
+  </li>
+  <li class="path__step path__step--next">
+    <a href="#2-retrieval"><span class="path__node"></span>
+    <span class="path__name">Retrieval</span>
+    <span class="path__what">Search by meaning</span>
+    <span class="path__state">Next</span></a>
+  </li>
+  <li class="path__step path__step--planned">
+    <a href="#3-team"><span class="path__node"></span>
+    <span class="path__name">Team</span>
+    <span class="path__what">Members and safe writing</span>
+    <span class="path__state">Planned</span></a>
+  </li>
+  <li class="path__step path__step--planned">
+    <a href="#4-operations"><span class="path__node"></span>
+    <span class="path__name">Operations</span>
+    <span class="path__what">Backup, upgrade, erase</span>
+    <span class="path__state">Planned</span></a>
+  </li>
+  <li class="path__step path__step--goal">
+    <a href="#the-path-to-100"><span class="path__node"><img src="../assets/logo.svg" alt=""></span>
+    <span class="path__name">1.0.0</span>
+    <span class="path__what">The goal</span>
+    <span class="path__state">Goal</span></a>
+  </li>
+</ol>
 
 Each milestone ends in a release numbered `0.x`. Until 1.0.0, treat the releases
 as early ones and read the [Changelog](changelog.md) before you upgrade.
