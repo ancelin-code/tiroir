@@ -1,11 +1,11 @@
 # Decomposition: tiroir v1
 
 **Status:** approved
-**Approved by:** Ancelin Serre, 2026-10-22 (milestone plan and the skeleton's cut)
+**Approved by:** Ancelin Serre, 2026-11-04 (S7 added to `retrieval`); first approved 2026-10-22 (milestone plan and the skeleton's cut)
 
 ## Source
 
-- Requirements: [`delivery/prd.md`](prd.md) (approved 2026-10-22).
+- Requirements: [`delivery/prd.md`](prd.md) (approved 2026-11-04).
 - Decision records: [`delivery/decisions/`](decisions/), ADR-001 to ADR-016
   (accepted 2026-10-22). The skeleton relies most on ADR-002 (Python, tooling,
   container), ADR-003 (store format), ADR-004 (server database), ADR-005 and
@@ -56,7 +56,7 @@ the review of `search-001` (PR #18) left open against the literature:
   whether to bound the join, for example to SIREN and SIRET lengths.
 
 **Exit:** On the skeleton's server, the evaluation command reports recall@5, MRR and negative false positives for lexical, semantic and hybrid retrieval on both bundled sets, hybrid at least as good as each alone; the default model is the evaluation's winner within the 4 GB budget; in Claude Code with the plugin installed, a prompt naming a client injects that client's summary within 300 ms at p95; in Claude Desktop, the memory skill makes the agent use tiroir on a scripted set (C7) and record new facts (W7).
-**Requirements:** R1, R2, R4, R4a, R5, R7, S3, S4, C1, C1a, C2, C3, C4, C5, C5a, C5b, C5c, C6, C7, W7, U2, V1, V2, V3, V4, P1, P2, P3, P4, P6
+**Requirements:** R1, R2, R4, R4a, R5, R7, S3, S4, S7, C1, C1a, C2, C3, C4, C5, C5a, C5b, C5c, C6, C7, W7, U2, V1, V2, V3, V4, P1, P2, P3, P4, P6
 **Epics:**
 
 ### team
