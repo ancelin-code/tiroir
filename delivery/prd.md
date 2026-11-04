@@ -1,7 +1,7 @@
 # tiroir — Requirements
 
-**Status:** approved
-**Approved by:** Ancelin Serre, 2026-10-22 (revises the local-first version
+**Status:** draft
+**Approved by:** none yet for the revision of 2026-11-04 (S7 added); last approved by Ancelin Serre, 2026-10-22 (revises the local-first version
 approved on 2026-10-21: v1 is a self-hosted server; amended the same day:
 OAuth client metadata fetching added to the network invariant, and W7)
 
@@ -125,6 +125,13 @@ built after the Must set and may slip to a later release.
   (French). Each contains a schema, templates, conventions and a synthetic
   dataset of at least 20 drawers with summaries and logs. No real person or
   company data appears in the public repository.
+- **S7.** The administrator adds their own presets by putting each one in a
+  single documented folder on the server, which survives an upgrade, and
+  creates a store from it by name, as from a bundled preset. This needs
+  neither copying the bundled presets out of the image nor overriding the
+  stack's configuration, and the bundled presets stay available. A preset of
+  the administrator's is validated exactly as a bundled one is (S6), and never
+  silently replaces a bundled preset of the same name.
 - **S5.** A store is usable without tiroir: a read-only clone (Y7) or a mirror
   (Y6) holds every summary, log and shared document as a Markdown file a
   person can read in any text editor or open as an Obsidian vault, and the
