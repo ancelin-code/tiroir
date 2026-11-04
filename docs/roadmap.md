@@ -23,7 +23,7 @@ second, *Retrieval*, is next, and is being prepared. The four milestones lead to
 | [4. Operations](#4-operations) | <span class="status status-planned">Planned</span> | A server you can keep, back up, upgrade and erase from |
 | [1.0.0](#the-path-to-100) | <span class="status status-goal">Goal</span> | The four milestones delivered and reviewed |
 
-## The path to 1.0.0 { #the-path-to-100 }
+## The path to 1.0.0
 
 Tiroir **1.0.0 is the release at the end of the fourth milestone**: the one where
 everything planned for the first version exists, and each milestone has been
@@ -88,7 +88,7 @@ Some principles hold at every release, and will still hold at 1.0.0:
   a team store without confirmation.
 - No memory content appears in commit messages, logs or error messages.
 
-## 1. Skeleton { #1-skeleton }
+## 1. Skeleton
 
 <span class="status status-done">Delivered in 0.1.0</span>
 
@@ -108,7 +108,7 @@ It was checked on a real VPS: a member added a log entry from Claude Desktop and
 found it by search within two seconds. Start with the
 [Installation Guide](install/vps.md).
 
-## 2. Retrieval { #2-retrieval }
+## 2. Retrieval
 
 <span class="status status-next">Next</span>
 
@@ -131,7 +131,7 @@ Finding the right memory, and having Claude use it without being asked.
 keyword, semantic and combined search find the right entry, and Claude Code and
 Claude Desktop use Tiroir on a scripted set of prompts.
 
-## 3. Team { #3-team }
+## 3. Team
 
 <span class="status status-planned">Planned</span>
 
@@ -153,7 +153,7 @@ From one person's server to an organisation's.
 *The check:* two members with different grants use one server, each reaching
 only their stores, and a non-developer completes the guided setup.
 
-## 4. Operations { #4-operations }
+## 4. Operations
 
 <span class="status status-planned">Planned</span>
 
