@@ -5,7 +5,7 @@ set -eu
 # changed, and launch the tasks each merge makes ready.
 #
 # Advancing a task set is deterministic once decomposition is approved: a merge
-# makes tasks ready, and a ready task gets a lane. Only merging needs a human.
+# makes tasks ready, and a ready task gets a bench. Only merging needs a human.
 # This loop does the rest and prints one line per event, so an agent running it
 # in the background is told what happened instead of asking.
 
@@ -19,28 +19,30 @@ usage() {
 usage: sh follow.sh [options] [-- launcher options]
 
 Run from the repository root. Polls task state, prints events, and launches
-tasks as they become ready. Options after -- go to launch-lanes.sh, for example
+tasks as they become ready. Options after -- go to launch-benches.sh, for example
 -- --no-web.
 
 Options:
   --interval <s>         Seconds between polls (default: 30).
   --summary-every <s>    Seconds between WAITING summaries (default: 300).
-  --max-lanes <n>        Lanes running at once on this machine (default: 3).
-  --no-launch            Report only; never start a lane.
-  --exit-on-human        Exit as soon as a lane ends (PUBLISHED or LANE-FAILED),
+  --max-benches <n>        Benches running at once on this machine (default: 3).
+  --no-launch            Report only; never start a bench.
+  --exit-on-human        Exit as soon as a bench ends (PUBLISHED or BENCH-FAILED),
                          so the end of the command is the notification. Run it
                          again after telling the user; outcomes already
                          announced this way do not stop the next run.
   --max-polls <n>        Stop after n polls (default: no limit).
-  --log-dir <dir>        Lane logs (default: .lanes/logs).
+  --log-dir <dir>        Bench logs (default: .logs inside the worktree root, where
+                         the launcher puts them, including a --worktree-root
+                         passed after --).
   --status-script <path> status.sh from etabli-status (default: beside this skill).
-  --launcher <path>      launch-lanes.sh (default: beside this script).
+  --launcher <path>      launch-benches.sh (default: beside this script).
   -h, --help             Print this help.
 
 Events, tab-separated, one per line:
-  LAUNCHED     <id> ...            a lane started, as the launcher prints it
-  PUBLISHED    <id> <url>          a lane opened its draft pull request
-  LANE-FAILED  <id> <last line>    a lane ended without a pull request
+  LAUNCHED     <id> ...            a bench started, as the launcher prints it
+  PUBLISHED    <id> <url>          a bench opened its draft pull request
+  BENCH-FAILED  <id> <last line>    a bench ended without a pull request
   IN-REVIEW    <id>                a pull request left draft
   MERGED       <id>                a task is done
   WAITING      review=<ids> running=<id:minutes ...>
@@ -57,26 +59,26 @@ Exit codes:
      was reached
   1  usage error, or task state unreadable five polls in a row
   3  stuck: the remaining tasks can never become ready
-  4  --exit-on-human: a lane ended and a person is expected
+  4  --exit-on-human: a bench ended and a person is expected
 USAGE
 }
 
 here="$(cd "$(dirname "$0")" && pwd)"
 interval=30
 summary_every=300
-max_lanes=3
+max_benches=3
 launch=1
 exit_on_human=0
 max_polls=0
-log_dir=".lanes/logs"
+log_dir=""
 status_script="$here/../../etabli-status/scripts/status.sh"
-launcher="$here/launch-lanes.sh"
+launcher="$here/launch-benches.sh"
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --interval) [ $# -ge 2 ] || die "--interval requires a value"; interval="$2"; shift 2 ;;
     --summary-every) [ $# -ge 2 ] || die "--summary-every requires a value"; summary_every="$2"; shift 2 ;;
-    --max-lanes) [ $# -ge 2 ] || die "--max-lanes requires a value"; max_lanes="$2"; shift 2 ;;
+    --max-benches) [ $# -ge 2 ] || die "--max-benches requires a value"; max_benches="$2"; shift 2 ;;
     --no-launch) launch=0; shift ;;
     --exit-on-human) exit_on_human=1; shift ;;
     --max-polls) [ $# -ge 2 ] || die "--max-polls requires a value"; max_polls="$2"; shift 2 ;;
@@ -90,8 +92,19 @@ while [ $# -gt 0 ]; do
 done
 # What is left in "$@" goes to the launcher.
 
+# The launcher writes its logs beside the worktrees, so the loop looks where the
+# launcher was told to put them.
+root="${ETABLI_WORKTREE_ROOT:-}"
+prev=""
+for arg in "$@"; do
+  [ "$prev" != --worktree-root ] || root="$arg"
+  prev="$arg"
+done
+[ -n "$root" ] || root="../benches/$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+[ -n "$log_dir" ] || log_dir="$root/.logs"
+
 case "$interval" in "" | *[!0-9]*) die "--interval must be a number of seconds" ;; esac
-case "$max_lanes" in "" | 0* | *[!0-9]*) die "--max-lanes must be a positive number" ;; esac
+case "$max_benches" in "" | 0* | *[!0-9]*) die "--max-benches must be a positive number" ;; esac
 [ -f "$status_script" ] || die "status script not found: $status_script"
 [ "$launch" -eq 0 ] || [ -f "$launcher" ] || die "launcher not found: $launcher"
 
@@ -125,7 +138,7 @@ event() (
 )
 
 conflicts_of() {
-  file="delivery/tasks/$1.md"
+  file="specs/tasks/$1.md"
   [ -f "$file" ] || return 0
   awk '
     NR == 1 && $0 != "---" { exit }
@@ -134,9 +147,9 @@ conflicts_of() {
   ' "$file"
 }
 
-# A lane's log ends with what its last step printed: the publisher's PUBLISHED
+# A bench's log ends with what its last step printed: the publisher's PUBLISHED
 # or NOTHING, the release's RELEASED or KEPT, or an ERROR from either.
-lane_end() {
+bench_end() {
   [ -f "$log_dir/$1.log" ] || return 0
   grep -E "^(PUBLISHED|NOTHING|RELEASED|KEPT|ERROR)$tab" "$log_dir/$1.log" | tail -n 1 || true
 }
@@ -177,13 +190,13 @@ EOF_ROWS
       [ "$after" != in-review ] || [ -z "$before" ] || event IN-REVIEW "$id"
     done
 
-    # A lane's outcome is in its log, not on the remote: a draft pull request is
-    # still "in progress" there, and a failed lane may have left nothing at all.
-    # A local log with no outcome yet is a lane running on this machine, whoever
-    # launched it, and it counts against this machine's lanes.
+    # A bench's outcome is in its log, not on the remote: a draft pull request is
+    # still "in progress" there, and a failed bench may have left nothing at all.
+    # A local log with no outcome yet is a bench running on this machine, whoever
+    # launched it, and it counts against this machine's benches.
     for id in $(items in_flight) $(started_ids); do
       ! has reported "$id" && [ -f "$log_dir/$id.log" ] || continue
-      end="$(lane_end "$id")"
+      end="$(bench_end "$id")"
       if [ -z "$end" ]; then
         in_list running "$id" || add running "$id"
         has started "$id" || put started "$id" "$(date +%s)"
@@ -197,10 +210,10 @@ EOF_END
         put published "$id" 1
         event PUBLISHED "$id" "$url"
       else
-        event LANE-FAILED "$id" "$end"
+        event BENCH-FAILED "$id" "$end"
       fi
       # The log outlives this run, so what a previous run already announced is
-      # kept beside it; otherwise every restart would stop on the same lane.
+      # kept beside it; otherwise every restart would stop on the same bench.
       [ "$exit_on_human" -eq 0 ] || grep -Fxq -- "$end" "$log_dir/announced" 2>/dev/null || add human "$end"
     done
     for id in $(items in_flight); do
@@ -210,7 +223,7 @@ EOF_END
     # Launch what this machine has room for. The launcher checks conflicts only
     # within its own batch, so skip here what conflicts with work in flight.
     if [ "$launch" -eq 1 ] && [ "$(count ready)" -gt 0 ]; then
-      slots=$((max_lanes - $(count running)))
+      slots=$((max_benches - $(count running)))
       for id in $(items ready); do
         clash=""
         for other in $(items in_flight); do
@@ -225,7 +238,7 @@ EOF_END
         fi
       done
       if [ "$slots" -gt 0 ] && [ "$(count candidates)" -gt 0 ]; then
-        launched="$(items candidates | sh "$launcher" --max-lanes "$slots" "$@" 2>&1 || true)"
+        launched="$(items candidates | sh "$launcher" --max-benches "$slots" "$@" 2>&1 || true)"
         while IFS= read -r line; do
           case "$line" in
             LAUNCHED*)
@@ -276,12 +289,12 @@ EOF_LAUNCHED
 
     if [ $(($(date +%s) - last_summary)) -ge "$summary_every" ]; then
       last_summary=$(date +%s)
-      lanes=""
+      benches=""
       for id in $(items running); do
-        lanes="${lanes:+$lanes }$id:$((($(date +%s) - $(get started "$id")) / 60))m"
+        benches="${benches:+$benches }$id:$((($(date +%s) - $(get started "$id")) / 60))m"
       done
       review="$(words review)"
-      event WAITING "review=${review:--}" "running=${lanes:--}"
+      event WAITING "review=${review:--}" "running=${benches:--}"
     fi
   fi
 

@@ -29,7 +29,7 @@ Files this task is expected to touch:
   tags or `latest`)
 - `docs/connect/claude-desktop.md` (only what the site needs, such as links)
 - `docs/reference/cli.md` (user-facing CLI reference, written for users from
-  `delivery/contracts/cli.md`, not copied from it)
+  `specs/contracts/cli.md`, not copied from it)
 - `.github/workflows/docs.yml` (build on pull requests, deploy to GitHub Pages
   from `develop`)
 - `pyproject.toml`, `uv.lock` (Zensical as a pinned dev dependency, with its
@@ -40,7 +40,7 @@ Files this task is expected to touch:
 - `AGENTS.md` (a short rule: a milestone is not delivered until the site
   documents what it adds; each task that changes user-visible behaviour
   updates its page)
-- `delivery/tasks/docs-001.md`
+- `specs/tasks/docs-001.md`
 
 Out of scope:
 

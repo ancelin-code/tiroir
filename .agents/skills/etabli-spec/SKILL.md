@@ -4,13 +4,13 @@ author: Ancelin Serre
 description: >-
   Part of Établi, invoked by etabli-orchestrator. Turn an intent into a short
   requirements document, then record the design decisions and interface contracts that let
-  parallel lanes build compatible parts. Use when starting a project, when an ask is too
+  parallel benches build compatible parts. Use when starting a project, when an ask is too
   vague to decompose, or when parallel work needs an agreed interface to build against.
   Does not break work into tasks or implement anything.
 license: Apache-2.0
 repository: https://github.com/ancelin-code/etabli.git
 product-version: etabli@v0
-version: "0.1.0"
+version: "0.2.0"
 keywords:
   - requirements
   - prd
@@ -24,9 +24,9 @@ metadata:
   owner: ancelin-code
 ---
 
-# Delivery Spec
+# Établi Spec
 
-Produces what the rest of the route depends on, in two stages with a human gate
+Produces what the rest of the workflow depends on, in two stages with a human gate
 after each:
 
 1. **Requirements** - what must be true when done.
@@ -40,7 +40,7 @@ before stage A is approved.
 The requirements are as long as they need to be and no longer. Brevity is not
 the goal and neither is length: a document that restates its sources or carries
 design detail hides the decisions that matter, while one trimmed to a size loses
-what the lanes build from. Cut repetition, never content. The real test is that
+what the benches build from. Cut repetition, never content. The real test is that
 `etabli-decompose` can cut the requirements into tasks without asking
 anything, and without re-reading the sources.
 
@@ -78,14 +78,14 @@ correct it in one pass.
 
 ### A3. Write the document
 
-Write it to `delivery/prd.md` at the repository root, from
+Write it to `specs/prd.md` at the repository root, from
 [the requirements template](assets/prd.template.md). The repository holds one
 requirements document: when the file already exists, revise it rather than
 starting another. Three things carry the weight:
 
 - **what must be true when done**, as observable outcomes
 - **what must not change**, which is what protects the existing system
-- **what is out of scope**, which is what prevents lanes inventing work
+- **what is out of scope**, which is what prevents benches inventing work
 
 Write for somebody who was not in the conversation. Every requirement should be
 checkable: a reader must be able to say whether it holds, without asking you.
@@ -110,7 +110,7 @@ removes a choice Stage B should make with better information.
 
 ### A5. Gate
 
-Present `delivery/prd.md` and stop. A human approves it before Stage B starts.
+Present `specs/prd.md` and stop. A human approves it before Stage B starts.
 
 ## Stage B - The spine
 
@@ -122,7 +122,7 @@ developers could reasonably choose differently, and their choices would then be
 incompatible, it belongs here. Everything else is an implementation detail and
 belongs to whoever writes the code.
 
-Contracts are the parallelization boundary. Lanes depend on written interfaces,
+Contracts are the parallelization boundary. Benches depend on written interfaces,
 never on each other's in-progress code. Without them, tasks that looked
 independent produce work that cannot be integrated, and the cost surfaces at
 merge time when several people are already finished.
@@ -147,7 +147,7 @@ Use [the decision record template](assets/adr.template.md), one file per
 decision. Write it to the repository's existing decision record directory, one
 already holding ADR files such as `docs/adr/` or `docs/decisions/`, numbered
 after the last record there. When there is none, write
-`delivery/decisions/ADR-<nnn>-<slug>.md`, starting at `001`.
+`specs/decisions/ADR-<nnn>-<slug>.md`, starting at `001`.
 
 State the alternatives that were genuinely considered and why they lost. A
 record without rejected alternatives is an assertion, and the next person to
@@ -159,8 +159,8 @@ a decision worth recording.
 ### B3. Write the contracts
 
 Use [the contract template](assets/contract.template.md) for each interface two
-or more lanes must agree on, one file per interface at
-`delivery/contracts/<interface>.md`.
+or more benches must agree on, one file per interface at
+`specs/contracts/<interface>.md`.
 
 A contract is only useful if it is precise enough to build against without
 asking. State the shape, the required and optional parts, the error cases, and a
@@ -194,7 +194,7 @@ are ambiguous: say so and stop, rather than burying the ambiguity in a record.
 ## Acceptance Criteria
 
 - the requirements state outcomes, invariants and exclusions, and lose nothing
-  the lanes build from; nothing is cut to fit a size
+  the benches build from; nothing is cut to fit a size
 - every requirement is observable, and assumptions are marked as assumptions
 - no design or technology choice is embedded as a requirement
 - every recorded decision is one where independent choices would have been incompatible

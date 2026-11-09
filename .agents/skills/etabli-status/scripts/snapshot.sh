@@ -3,7 +3,7 @@ set -eu
 
 # Print the state of the project as one JSON document, for connectors that
 # project it into an external tool such as Jira or Confluence. The contract
-# those connectors follow is ADR-005 in the kit's repository.
+# those connectors follow is ADR-005 in Établi's repository.
 #
 # States come from status.sh, so a snapshot and a status read never disagree.
 # Nothing here writes anything.
@@ -23,7 +23,7 @@ as one JSON document (schema 1) on stdout. A project without milestones, or
 whose requirements carry no ids, has an empty list for them.
 
 Options:
-  --tasks-dir <dir>   Directory holding <id>.md task files (default: delivery/tasks).
+  --tasks-dir <dir>   Directory holding <id>.md task files (default: specs/tasks).
   --remote <name>     Remote holding the task branches (default: origin).
   --no-fetch          Skip the remote refresh and read cached refs.
   -h, --help          Print this help.
@@ -33,7 +33,7 @@ USAGE
 # Raise on any change a connector could break on: a renamed or removed field, a
 # new state value. Adding a field does not need it.
 schema=1
-tasks_dir="delivery/tasks"
+tasks_dir="specs/tasks"
 
 # Check each option once and queue the accepted ones behind the rest, so that
 # what is left in "$@" is exactly what status.sh receives.
@@ -54,7 +54,7 @@ done
 
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
 home="$(git rev-parse --show-toplevel)"
-delivery="$(dirname "$tasks_dir")"
+specs="$(dirname "$tasks_dir")"
 tab="$(printf '\t')"
 
 # status.sh already refuses to guess, so its failure is this script's failure.
@@ -141,7 +141,7 @@ json_list() (
 # What each epic delivers, from the Epics section of the decomposition summary:
 # the prose under each "### <epic>" heading, up to its task list. The epics file
 # holds one "<epic><TAB><delivers>" line per epic, in the order they are printed.
-decomposition="$delivery/decomposition.md"
+decomposition="$specs/decomposition.md"
 : >"$store/epics"
 if [ -f "$decomposition" ]; then
   awk '
@@ -241,7 +241,7 @@ EOF_MILESTONES
 
 # Coverage of each requirement, as coverage.sh reports it, when the
 # requirements carry ids. Its failure is this script's failure, as status.sh's is.
-if [ -f "$delivery/prd.md" ] && grep -Eq '^[-*][[:space:]]+\*\*[A-Za-z0-9][A-Za-z0-9-]*\.\*\*' "$delivery/prd.md"; then
+if [ -f "$specs/prd.md" ] && grep -Eq '^[-*][[:space:]]+\*\*[A-Za-z0-9][A-Za-z0-9-]*\.\*\*' "$specs/prd.md"; then
   coverage_out="$(sh "$(dirname "$0")/coverage.sh" "$@")" || exit $?
   # comma lists, "-" when empty, as JSON arrays
   csv_list() { if [ "$1" = - ]; then printf '[]'; else json_list "$(printf '%s' "$1" | tr ',' ' ')"; fi; }
@@ -271,14 +271,14 @@ add_doc() {
   title="$(awk '/^#[[:space:]]/ { sub(/^#[[:space:]]+/, ""); print; exit }' "$2")"
   add docs_json "$(printf '    {"kind": %s, "path": %s, "title": %s}' "$(json_str "$1")" "$(json_str "$2")" "$(json_or_null "$title")")"
 }
-[ ! -f "$delivery/prd.md" ] || add_doc requirements "$delivery/prd.md"
+[ ! -f "$specs/prd.md" ] || add_doc requirements "$specs/prd.md"
 [ ! -f "$decomposition" ] || add_doc decomposition "$decomposition"
-for dir in "$delivery/decisions" docs/adr docs/decisions; do
+for dir in "$specs/decisions" docs/adr docs/decisions; do
   for doc in "$dir"/ADR-*.md; do
     [ ! -e "$doc" ] || add_doc decision "$doc"
   done
 done
-for doc in "$delivery/contracts"/*.md; do
+for doc in "$specs/contracts"/*.md; do
   [ ! -e "$doc" ] || add_doc contract "$doc"
 done
 

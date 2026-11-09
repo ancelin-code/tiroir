@@ -34,7 +34,7 @@ Files this task is expected to touch:
 - `docs/reference/cli.md`, `docs/install/vps.md`, `docs/index.md` (only the
   links, and the sentences that say a store can only start from the bundled
   preset)
-- `delivery/tasks/docs-001.md` is left as it is: it records the first site.
+- `specs/tasks/docs-001.md` is left as it is: it records the first site.
 
 Out of scope:
 

@@ -4,9 +4,9 @@ set -eu
 # Add the block that routes a project's requests to etabli-orchestrator to its
 # AGENTS.md, which both Claude Code and Copilot CLI read on every request.
 # A skill description only fires when a request happens to match it; this is
-# what makes the kit the default for the project rather than one option.
+# what makes Établi the default for the project rather than one option.
 #
-# Also seed delivery/review-lenses.conf, so the file that maps review concerns to
+# Also seed specs/review-lenses.conf, so the file that maps review concerns to
 # review skills is found where it is read rather than in the conventions.
 
 die() {
@@ -19,11 +19,20 @@ usage() {
 usage: sh install-routing.sh
 
 Run from the repository root. Appends the routing block to AGENTS.md, creating
-the file when there is none, and writes a starter delivery/review-lenses.conf
+the file when there is none, and writes a starter specs/review-lenses.conf
 when the project has none. Running it again changes nothing.
 
 Prints ADDED or PRESENT, then the path, once per file.
 USAGE
+}
+
+# Separate what is about to be appended to a file from its content by one blank
+# line, whatever the file ended with. Does nothing for an empty or missing file.
+separate() {
+  if [ -s "$1" ]; then
+    [ -z "$(tail -c1 "$1")" ] || printf '\n' >>"$1"
+    printf '\n' >>"$1"
+  fi
 }
 
 case "${1:-}" in
@@ -44,22 +53,17 @@ lenses="$here/../assets/review-lenses.conf"
 if grep -qs 'etabli:routing' AGENTS.md; then
   printf 'PRESENT\tAGENTS.md\n'
 else
-  # Separate the block from existing content by one blank line, whatever the
-  # file ended with.
-  if [ -s AGENTS.md ]; then
-    [ -z "$(tail -c1 AGENTS.md)" ] || printf '\n' >>AGENTS.md
-    printf '\n' >>AGENTS.md
-  fi
+  separate AGENTS.md
   cat "$block" >>AGENTS.md
   printf 'ADDED\tAGENTS.md\n'
 fi
 
 # The project owns this file once it exists, so an edited one is never touched.
-target="delivery/review-lenses.conf"
+target="specs/review-lenses.conf"
 if [ -e "$target" ]; then
   printf 'PRESENT\t%s\n' "$target"
 else
-  mkdir -p delivery
+  mkdir -p specs
   cp "$lenses" "$target"
   printf 'ADDED\t%s\n' "$target"
 fi

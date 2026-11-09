@@ -1,7 +1,7 @@
 # Skeleton exit check
 
 The checklist of the skeleton milestone's exit criterion
-([decomposition](../../delivery/decomposition.md#skeleton)), to run once on a
+([decomposition](../../specs/decomposition.md#skeleton)), to run once on a
 real VPS with the project owner. Each step says what to record; put the record
 in the milestone review.
 
@@ -30,8 +30,8 @@ what to observe.
 
 ## Checks against the Claude hosts
 
-[ADR-013](../../delivery/decisions/ADR-013-adapters-and-skills.md) and
-[ADR-015](../../delivery/decisions/ADR-015-authentication.md) leave checks to
+[ADR-013](../../specs/decisions/ADR-013-adapters-and-skills.md) and
+[ADR-015](../../specs/decisions/ADR-015-authentication.md) leave checks to
 make with a real Claude host. Record the result of each at step 6:
 
 - Which way the application identified itself to the server: by a client

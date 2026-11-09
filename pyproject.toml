@@ -42,7 +42,7 @@ build-backend = "uv_build"
 [tool.ruff]
 line-length = 88
 src = ["src", "tests"]
-extend-exclude = ["delivery", "docs"]
+extend-exclude = ["specs", "docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "T20"]

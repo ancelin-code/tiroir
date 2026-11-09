@@ -3,45 +3,45 @@
   "skills": {
     "etabli-decompose": {
       "source": "ancelin-code/etabli",
-      "ref": "v0.1.0",
+      "ref": "v0.2.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/etabli-decompose/SKILL.md",
-      "computedHash": "200b1cfd602d7aae0ad2b6cd0301ee66e370a32eb31abb6d803553508c8c22a3"
+      "computedHash": "9f9fc196186a31201ed6a3d1b1daf4b859d81d5107510f1544c2105d1657dbc1"
     },
     "etabli-implement": {
       "source": "ancelin-code/etabli",
-      "ref": "v0.1.0",
+      "ref": "v0.2.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/etabli-implement/SKILL.md",
-      "computedHash": "1a1428d8a27e125d33ea660f422e2783cda869b1905d52ca3226dd15e92a990f"
+      "computedHash": "75e3c2bfaf7c35987bce8e9320a0e0d33f4dc682e19807510cf6516ca1cfa978"
     },
     "etabli-orchestrator": {
       "source": "ancelin-code/etabli",
-      "ref": "v0.1.0",
+      "ref": "v0.2.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/etabli-orchestrator/SKILL.md",
-      "computedHash": "04b9443767d64a7e6c9afdfb1fc529cf55ff39d8544dd87d372a936aac2d4673"
+      "computedHash": "c9c5f6da8e819dfd3071af0fbc0debd53e7ec29827dea9783ed7ebc0511aad75"
     },
     "etabli-refine": {
       "source": "ancelin-code/etabli",
-      "ref": "v0.1.0",
+      "ref": "v0.2.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/etabli-refine/SKILL.md",
-      "computedHash": "ba334e9d4c6f79f2e357bdabd1391ab5fbfca3370e449c2016a85b272f6470c7"
+      "computedHash": "62faca233d863dd702eb0fb4f1a9e92872a4618840cbc8d811c6316d2a4529df"
     },
     "etabli-spec": {
       "source": "ancelin-code/etabli",
-      "ref": "v0.1.0",
+      "ref": "v0.2.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/etabli-spec/SKILL.md",
-      "computedHash": "3be4ac82a0ffc75cbb294b6fa9bfc69811eb1d74809420730555d1230d9019e5"
+      "computedHash": "8b0b769a91dfd3747bf8075d80d1a74d16e421e314004b0ad45d5251c93a8563"
     },
     "etabli-status": {
       "source": "ancelin-code/etabli",
-      "ref": "v0.1.0",
+      "ref": "v0.2.0",
       "sourceType": "github",
       "skillPath": ".agents/skills/etabli-status/SKILL.md",
-      "computedHash": "9619bdb627987bfdb953dcb8b6d5d9cd7f9b78bbba3cf903897657643367022c"
+      "computedHash": "0fd426d2c6ca7aa6d4e203f4b1458907b749d713e9c35ec52c97296107aa29da"
     }
   }
 }

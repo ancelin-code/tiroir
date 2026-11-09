@@ -18,13 +18,13 @@ that tasks and milestones refer to. An id is never reused.
 
 ## Invariants
 
-What must not change. These protect the existing system and bound every lane.
+What must not change. These protect the existing system and bound every bench.
 
 - <behavior, contract, or guarantee that must survive this work>
 
 ## Out of scope
 
-Named explicitly, so no lane invents it.
+Named explicitly, so no bench invents it.
 
 - <the nearby thing somebody would otherwise build>
 

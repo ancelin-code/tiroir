@@ -1,7 +1,7 @@
 <!-- etabli:routing -->
 ## Établi
 
-This project is delivered with Établi. Its state lives in `delivery/`
+This project is delivered with Établi. Its state lives in `specs/`
 and in git, never in a conversation.
 
 Route every request about this project through the `etabli-orchestrator`

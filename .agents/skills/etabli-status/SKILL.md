@@ -3,19 +3,19 @@ name: etabli-status
 author: Ancelin Serre
 description: >-
   Part of Établi, used by etabli-orchestrator and by developers directly.
-  Claim a delivery task and read run state directly from git, with no shared status file
+  Claim an Établi task and read run state directly from git, with no shared status file
   and no model reasoning. Use when a developer picks up a task from a decomposed epic, when
-  a launcher needs to know whether a task is free before starting a lane, or when asked who
+  a launcher needs to know whether a task is free before starting a bench, or when asked who
   holds a task. Scripts only: it does not implement tasks or open pull requests.
 license: Apache-2.0
 repository: https://github.com/ancelin-code/etabli.git
 product-version: etabli@v0
-version: "0.1.0"
+version: "0.2.0"
 keywords:
   - claim-task
   - etabli-status
   - task-lock
-  - parallel-lanes
+  - parallel-benches
   - who-holds
 spec-version: "1.0"
 compatibility:
@@ -26,9 +26,9 @@ metadata:
   owner: ancelin-code
 ---
 
-# Delivery Status
+# Établi Status
 
-Coordination for parallel delivery lanes. Every answer comes from git refs, so
+Coordination for parallel benches. Every answer comes from git refs, so
 this skill runs deterministically and costs no model tokens.
 
 Task state is **derived, never stored**. There is no status file to update, fall
@@ -36,12 +36,12 @@ out of date, or conflict on.
 
 ## When to use
 
-- a developer or a lane launcher is about to start work on a task
+- a developer or a bench launcher is about to start work on a task
 - something needs to know whether a task is already taken, and by whom
 
-The task file schema, branch naming and tiers are defined by the delivery
+The task file schema, branch naming and tiers are defined by the Établi
 conventions, `<etabli-orchestrator>/references/conventions.md`. This skill does not require
-them: it reads the task id it is given, the task files in `delivery/tasks/`, and
+them: it reads the task id it is given, the task files in `specs/tasks/`, and
 the git refs around it.
 
 ## Claiming a task
@@ -61,15 +61,15 @@ Read the exit code, not the output text:
 
 | Exit | Meaning | What to do |
 |---|---|---|
-| 0 | The claim was won | Start the lane on `task/<id>` |
+| 0 | The claim was won | Start the bench on `task/<id>` |
 | 2 | Another developer holds the task | Pick another ready task; do not retry |
 | 1 | Usage or environment error | Fix the reported cause |
 
 On exit 2 the script prints the holder and how long ago they claimed it, so a
 developer can ask rather than duplicate the work.
 
-Run the claim from the lane's worktree, on the branch `task/<id>`. On success
-the local branch is advanced to the claim commit so the lane builds on top of
+Run the claim from the bench's worktree, on the branch `task/<id>`. On success
+the local branch is advanced to the claim commit so the bench builds on top of
 it, and its upstream is set to the claimed branch, so a plain `git push` goes
 there rather than to the branch it was started from. A worktree with uncommitted changes is never reset; the script reports that
 it left the branch alone.
@@ -97,13 +97,13 @@ answer, because the answer lives in the refs.
 
 Narrow the output with `--ready`, `--blocked`, `--in-progress` or `--in-review`.
 Use `--ready` to answer "what can I pick up", which is the question that precedes
-a claim, and `--in-review` for what is waiting on a person rather than on a lane.
+a claim, and `--in-review` for what is waiting on a person rather than on a bench.
 
-A lane opens its pull request as a draft and leaves it drafted while it works,
-so in review is reached by marking it ready for review. Nothing a lane does on
+A bench opens its pull request as a draft and leaves it drafted while it works,
+so in review is reached by marking it ready for review. Nothing a bench does on
 its own moves a task out of in progress.
 
-When `delivery/decomposition.md` plans milestones, the output also carries one
+When `specs/decomposition.md` plans milestones, the output also carries one
 `MILESTONE` row per milestone, in plan order: its slug, its state (`closed`,
 `undecomposed`, `active`, `merged`, `reviewing` or `planned`, as the
 conventions define them), its epics and the requirement ids it targets. A
@@ -124,12 +124,12 @@ sh <skill-root>/scripts/standup.sh
 ```
 
 Run both from the repository root. Options common to both: `--tasks-dir <dir>`
-when task files are not in `delivery/tasks`,
+when task files are not in `specs/tasks`,
 `--remote <name>` when the shared remote is not `origin`, and `--no-fetch` to
 read cached refs instead of refreshing from the remote.
 
 For how much of each requirement merged work covers, from the tasks' `## Covers`
-sections and the requirement ids in `delivery/prd.md`:
+sections and the requirement ids in `specs/prd.md`:
 
 ```sh
 sh <skill-root>/scripts/coverage.sh [--milestone <slug>]

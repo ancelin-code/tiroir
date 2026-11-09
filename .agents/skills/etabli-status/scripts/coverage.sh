@@ -24,19 +24,19 @@ Run from the repository root. Prints, tab-separated:
 
   REQ       <id> <state> <milestones> <merged tasks> <open tasks>
                                       one row per requirement, in the order of
-                                      delivery/prd.md; a list is - when empty
+                                      specs/prd.md; a list is - when empty
   PART      <id> <task> <task state> <note>
                                       each partial cover of a requirement that
                                       is not yet covered: what that task does
   COVERAGE  covered=<n> partly=<n> planned=<n> not-started=<n>
 
-A requirement is an outcome in delivery/prd.md written as "- **<id>.** ...".
+A requirement is an outcome in specs/prd.md written as "- **<id>.** ...".
 A task covers it by listing the id under "## Covers", in full as "- <id>" or
 in part as "- <id> (part): <what this task does of it>".
 
 Options:
   --milestone <slug>  Only the requirements this milestone targets.
-  --tasks-dir <dir>   Directory holding <id>.md task files (default: delivery/tasks).
+  --tasks-dir <dir>   Directory holding <id>.md task files (default: specs/tasks).
   --remote <name>     Remote holding the task branches (default: origin).
   --no-fetch          Skip the remote refresh and read cached refs.
   -h, --help          Print this help.
@@ -47,7 +47,7 @@ Exit codes:
 USAGE
 }
 
-tasks_dir="delivery/tasks"
+tasks_dir="specs/tasks"
 milestone=""
 
 # Check each option once and queue the ones status.sh takes behind the rest, so

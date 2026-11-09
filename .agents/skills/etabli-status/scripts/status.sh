@@ -40,14 +40,14 @@ Filters (optional, choose one):
   --in-review     Only tasks whose pull request is waiting on a reviewer.
 
 Options:
-  --tasks-dir <dir>   Directory holding <id>.md task files (default: delivery/tasks).
+  --tasks-dir <dir>   Directory holding <id>.md task files (default: specs/tasks).
   --remote <name>     Remote holding the task branches (default: origin).
   --no-fetch          Skip the remote refresh and read cached refs.
   -h, --help          Print this help.
 USAGE
 }
 
-tasks_dir="delivery/tasks"
+tasks_dir="specs/tasks"
 remote="origin"
 filter=""
 do_fetch=1
@@ -176,8 +176,8 @@ EOF_CLAIMED
 $merged_heads
 EOF_MERGED
 
-  # A lane opens its pull request as a draft and leaves it that way until the
-  # work is finished, so "draft" still means the lane is working. Marking it
+  # A bench opens its pull request as a draft and leaves it that way until the
+  # work is finished, so "draft" still means the bench is working. Marking it
   # ready for review is the act that hands the task to a human.
   review_heads="$(pr_heads "$dir" --state open --limit 200 --json headRefName,isDraft \
     --jq '.[] | select(.isDraft | not) | .headRefName')"
@@ -203,7 +203,7 @@ state_of() (
   id="$1"
   has done_task "$id" && { printf 'done'; return; }
   # More specific than in-progress: the branch still exists in both, but a pull
-  # request out of draft is waiting on a person, not on a lane.
+  # request out of draft is waiting on a person, not on a bench.
   has review_task "$id" && { printf 'in-review'; return; }
   has holder "$id" && { printf 'in-progress'; return; }
   for dep in $(get depends_of "$id"); do

@@ -83,7 +83,7 @@ documentation site.
 ## Project documents
 
 - [Product brief](docs/brief.md): vision, principles and constraints.
-- [Requirements](delivery/prd.md): what v1 must do, checkably.
+- [Requirements](specs/prd.md): what v1 must do, checkably.
 - [Prior art review](docs/research/prior-art.md): what we learned from existing
   agent memory projects.
 - [Skeleton exit check](docs/milestones/skeleton-exit-check.md): the checklist

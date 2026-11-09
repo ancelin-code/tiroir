@@ -2,7 +2,7 @@
 name: etabli-refine
 author: Ancelin Serre
 description: >-
-  Part of Établi, invoked by etabli-orchestrator inside a lane, after
+  Part of Établi, invoked by etabli-orchestrator inside a bench, after
   etabli-implement. Take the uncommitted change a task left, review it with fresh eyes
   against the task's acceptance criteria, fix what the review finds, simplify the change
   without altering its behaviour, re-run validation, and add what was done to the handoff
@@ -11,13 +11,13 @@ description: >-
 license: Apache-2.0
 repository: https://github.com/ancelin-code/etabli.git
 product-version: etabli@v0
-version: "0.1.0"
+version: "0.2.0"
 keywords:
   - review
   - simplify
   - refactor
   - quality
-  - lane
+  - bench
 spec-version: "1.0"
 compatibility:
   - git@>=2.5
@@ -26,9 +26,9 @@ metadata:
   owner: ancelin-code
 ---
 
-# Delivery Refine
+# Établi Refine
 
-The second session of a lane. `etabli-implement` wrote a change and validated
+The second session of a bench. `etabli-implement` wrote a change and validated
 it; this session did not write it, usually runs on a stronger model, and makes
 it ready for a human: correct, inside its scope, and as simple as it can be
 without changing what it does.
@@ -42,7 +42,7 @@ Run it in a session that did not write the change. If this session ran
 
 Invoked as `/etabli-refine <path-to-task-file> --report <path>`: the same task
 file `etabli-implement` worked from, and the handoff report it wrote, which
-this session extends. With a bare task id, the file is `delivery/tasks/<id>.md`
+this session extends. With a bare task id, the file is `specs/tasks/<id>.md`
 under the repository root. Without a report, write one at the path given.
 
 Read, in this order:

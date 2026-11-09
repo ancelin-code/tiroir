@@ -2,7 +2,7 @@
 
 > **tiroir** (French for *drawer*): configurable, scoped memory for AI agents.
 >
-> This brief describes **what** we are building and **why**, the principles and the hard constraints. It deliberately leaves most **how** decisions open. The requirements live in [`delivery/prd.md`](../delivery/prd.md); every significant design decision is recorded as a decision record (context → options → decision → consequences).
+> This brief describes **what** we are building and **why**, the principles and the hard constraints. It deliberately leaves most **how** decisions open. The requirements live in [`specs/prd.md`](../specs/prd.md); every significant design decision is recorded as a decision record (context → options → decision → consequences).
 
 ## 1. Vision
 
@@ -74,7 +74,7 @@ The metaphor is kept as the product vocabulary.
 
 ## 7. Functional requirements
 
-The detailed, checkable requirements are in [`delivery/prd.md`](../delivery/prd.md). In short:
+The detailed, checkable requirements are in [`specs/prd.md`](../specs/prd.md). In short:
 
 **Must have (v1)**
 
@@ -125,7 +125,7 @@ Automatic capture or compression of whole sessions, document ingestion (PDF, ema
 
 The design must not preclude a **hosted offering** later (several organizations on one service).
 
-The technical decisions are recorded in `delivery/decisions/`: runtime (Python in a container image), members and access, index, embeddings, retrieval, detection, process model, Git on the server, purge, proposals, adapters and skills, links, authentication and deployment.
+The technical decisions are recorded in `specs/decisions/`: runtime (Python in a container image), members and access, index, embeddings, retrieval, detection, process model, Git on the server, purge, proposals, adapters and skills, links, authentication and deployment.
 
 ## 10. Harness-agnostic roadmap
 
@@ -160,7 +160,7 @@ Real deployments keep their stores (data and configuration) on their own servers
 ## 13. Working process
 
 1. ~~Read this brief, study the prior art in §3, and ask clarifying questions.~~
-2. ~~Write the requirements with Établi~~ (`delivery/prd.md`, approved).
+2. ~~Write the requirements with Établi~~ (`specs/prd.md`, approved).
 3. Record the architecture decisions and write the interface contracts (in review).
 4. Decompose into milestones and tasks, then implement milestone by milestone. Start with a walking skeleton: one server, one store, append a note and find it from Claude Desktop, to prove the remote connector, sign-in and deployment first.
 
