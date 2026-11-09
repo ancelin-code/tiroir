@@ -1,7 +1,7 @@
 <!-- etabli:routing -->
 ## Établi
 
-This project is delivered with Établi. Its state lives in `delivery/`
+This project is delivered with Établi. Its state lives in `specs/`
 and in git, never in a conversation.
 
 Route every request about this project through the `etabli-orchestrator`
@@ -12,7 +12,7 @@ unrelated to delivering this project skip it.
 
 ## Language
 
-All repository content is written in English: specifications (`delivery/`),
+All repository content is written in English: specifications (`specs/`),
 decision records, documentation, code, comments and commit messages. The only
 exception is user-facing memory content, whose language is a store setting
 (for example French for the `accounting-firm` preset's synthetic data).
@@ -72,7 +72,7 @@ stderr, set up by `tiroir.cli.main.setup_logging`). Never log memory content
 ## Command line
 
 The `tiroir` command is parsed with `argparse` (ADR-002), one sub-parser per
-command group of [the CLI contract](delivery/contracts/cli.md). No other
+command group of [the CLI contract](specs/contracts/cli.md). No other
 argument parsing library.
 
 ## Docstrings

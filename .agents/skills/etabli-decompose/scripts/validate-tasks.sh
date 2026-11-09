@@ -1,11 +1,11 @@
 #!/bin/sh
 set -eu
 
-# Validate a decomposed task set before any lane starts.
+# Validate a decomposed task set before any bench starts.
 #
 # Every check here is deterministic. The cost of a bad task set is paid by
 # several developers at once, hours later, so it is worth catching up front:
-# a missing dependency stalls a lane, a dependency cycle stalls all of them,
+# a missing dependency stalls a bench, a dependency cycle stalls all of them,
 # and an undeclared file conflict produces work that cannot be merged.
 #
 # Frontmatter is parsed as a constrained subset of YAML: one `key: value` per
@@ -21,18 +21,22 @@ usage() {
   cat <<'USAGE'
 usage: sh validate-tasks.sh [--tasks-dir <dir>] [--decomposition <path>]
 
-Validates every task file in <dir> (default: delivery/tasks), and the
+Validates every task file in <dir> (default: specs/tasks), and the
 decomposition summary that has to agree with it. When tasks name the
 requirements they cover, or the summary has a Milestones section, also checks
-them against the requirements beside it (delivery/prd.md) and the milestone
-review notes (delivery/milestones/<slug>.md).
+them against the requirements beside it (specs/prd.md) and the milestone
+review notes (specs/milestones/<slug>.md).
 
 Options:
-  --tasks-dir <dir>     Directory holding <id>.md task files (default: delivery/tasks).
+  --tasks-dir <dir>     Directory holding <id>.md task files (default: specs/tasks).
   --decomposition <p>   Decomposition summary to cross-check (default:
                         decomposition.md beside the tasks directory, so
-                        delivery/decomposition.md).
+                        specs/decomposition.md).
   -h, --help            Print this help.
+
+A summary with neither a Milestones section nor a '**Milestones:** none' line
+draws a WARN row: milestones are the default, and only the user may decide
+against them. It does not change the exit code.
 
 Exit codes:
   0  every task file is valid
@@ -41,7 +45,7 @@ Exit codes:
 USAGE
 }
 
-tasks_dir="delivery/tasks"
+tasks_dir="specs/tasks"
 decomposition=""
 
 while [ $# -gt 0 ]; do
@@ -64,7 +68,7 @@ done
 # whole cut, and a file inside tasks/ would be globbed as a task.
 [ -n "$decomposition" ] || decomposition="$(dirname "$tasks_dir")/decomposition.md"
 
-# Mirrors the tiers table in the delivery conventions, which is where a tier's
+# Mirrors the tiers table in the Établi conventions, which is where a tier's
 # meaning is defined. A test parses that table and fails if the two drift apart.
 VALID_TIERS=" plan build chore "
 VALID_TYPES=" feat fix refactor perf test docs build ci chore "
@@ -213,7 +217,7 @@ for file in "$tasks_dir"/*.md; do
   fi
 
   # Optional: the repository the change lands in, when it is not this one. A
-  # missing clone would only surface when the lane launches, on someone else's
+  # missing clone would only surface when the bench launches, on someone else's
   # machine, so it is caught here.
   if [ -n "$repo" ]; then
     case "$repo" in
@@ -454,7 +458,7 @@ checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition"
     if (ENVIRON["HAS_SUMMARY"] != 1) {
       fail(summary, "no decomposition summary at " ENVIRON["SUMMARY_PATH"])
     } else {
-      # Both directions matter. A task in the summary with no file is a lane that
+      # Both directions matter. A task in the summary with no file is a bench that
       # can never start; a task file absent from the summary is work nobody
       # approved, which a launcher would happily run anyway.
       for (i = 1; i <= d; i++) {
@@ -467,21 +471,21 @@ checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition"
         if (!(ids[i] in declared_epic)) fail(ids[i], "missing from " summary)
 
       # The launcher reads the fields, not the summary, so the two must agree: a
-      # set the summary calls serial runs one lane at a time only if every task
+      # set the summary calls serial runs one bench at a time only if every task
       # says so.
       # With milestones, Run as describes the cut being run: the current
       # milestone tasks, or those of the last one cut once every milestone is closed.
       alone = 0; scoped = 0
       for (i = 1; i <= n; i++) if (ids[i] in in_scope) { scoped++; if (parallel_of[ids[i]] == "false") alone++ }
       run_as = ENVIRON["RUN_AS"]
-      if (run_as ~ /\|/) fail(summary, "Run as still reads \047lanes | serially\047: pick one")
+      if (run_as ~ /\|/) fail(summary, "Run as still reads \047benches | serially\047: pick one")
       else if (run_as ~ /serial/) {
         for (i = 1; i <= n; i++)
           if ((ids[i] in in_scope) && parallel_of[ids[i]] != "false")
             fail(ids[i], summary " runs the set serially, so parallel must be false")
-      } else if (run_as ~ /lanes/) {
+      } else if (run_as ~ /benches/) {
         if (scoped > 1 && alone == scoped) fail(summary, "every task runs alone, so Run as should say serially")
-      } else fail(summary, "no \047Run as:\047 line saying lanes or serially")
+      } else fail(summary, "no \047Run as:\047 line saying benches or serially")
     }
     printf "TASKS\t%s\n", n
     printf "EPICS\t%s\n", e
@@ -490,6 +494,10 @@ checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition"
 ' "$store/facts" "$store/milestones" "$store/requirements" "$store/declared")"
 
 printf '%s\n' "$checks"
+if [ -f "$decomposition" ] && [ "$has_milestones" -eq 0 ] &&
+  ! grep -Eiq '^\*\*Milestones:\*\*[[:space:]]*none' "$decomposition"; then
+  printf 'WARN\t%s\tno Milestones section and no "**Milestones:** none" line: milestones are the default, and only the user may decide against them\n' "$decomposition"
+fi
 failures=$((failures + $(printf '%s\n' "$checks" | grep -c '^FAIL' || true)))
 
 if [ "$failures" -gt 0 ]; then

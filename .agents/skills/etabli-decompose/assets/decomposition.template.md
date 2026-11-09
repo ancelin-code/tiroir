@@ -8,15 +8,15 @@
 What this was cut from. The next phase starts here, in a fresh session, so a
 reader who saw none of the decomposition must be able to follow it back.
 
-- <link to the approved requirements, `delivery/prd.md`>
-- <links to the decision records and `delivery/contracts/` files the cut uses>
+- <link to the approved requirements, `specs/prd.md`>
+- <links to the decision records and `specs/contracts/` files the cut uses>
 
 ## Milestones
 
-Optional: delete this section to cut the whole scope at once. Keep it when the
-project is delivered in end-to-end slices, with a review after each. List every
-milestone in delivery order. Only the current one has epics; a later one names
-its exit and targets, and is cut after the review of the one before.
+List every milestone in delivery order. Only the current one has epics; a later
+one names its exit and targets, and is cut after the review of the one before.
+If the user decided against milestones, replace this section with
+`**Milestones:** none, by <name>, <date>: <their reason>` under the status.
 
 ### <milestone-slug>
 
@@ -47,7 +47,7 @@ Where the set serializes, and what forces it. With milestones, this section and
 the critical path describe the current milestone's cut. A set that serializes almost
 everywhere is a finding: say serially, and mark every task `parallel: false`.
 
-**Run as:** lanes | serially
+**Run as:** benches | serially
 
 - <task ids that cannot run together, and the file or contract that forces it>
 

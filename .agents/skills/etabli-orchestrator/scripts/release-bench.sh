@@ -1,12 +1,12 @@
 #!/bin/sh
 set -eu
 
-# Give a task back after its lane's session failed without doing anything.
+# Give a task back after its bench's session failed without doing anything.
 #
 # An expired login or a model the account cannot use ends the session at once,
 # before any change. Left alone, the claim holds the task until somebody
-# notices and deletes the branch by hand. The launcher runs this in the lane
-# worktree when the session exits non-zero; a lane that changed anything is
+# notices and deletes the branch by hand. The launcher runs this in the bench
+# worktree when the session exits non-zero; a bench that changed anything is
 # kept for a human, since only a human can tell partial work from waste.
 
 die() {
@@ -16,9 +16,9 @@ die() {
 
 usage() {
   cat <<'USAGE'
-usage: sh release-lane.sh [--remote <name>] <task-file>
+usage: sh release-bench.sh [--remote <name>] <task-file>
 
-Run from the root of the lane worktree, on branch task/<id>. When the lane left
+Run from the root of the bench worktree, on branch task/<id>. When the bench left
 no change and no commit past its claim, deletes the claim on the remote, then
 the worktree and its local branch.
 
@@ -33,7 +33,7 @@ Prints one line, tab-separated:
 Exit codes:
   0  the claim was released
   1  usage or environment error
-  3  kept: the lane left work behind, or the claim is not this lane's
+  3  kept: the bench left work behind, or the claim is not this bench's
 USAGE
 }
 
@@ -52,7 +52,7 @@ done
 [ -n "$task_file" ] || die "no task file given"
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
 worktree="$(git rev-parse --show-toplevel)"
-[ "$worktree" = "$(pwd -P)" ] || die "run from the root of the lane worktree"
+[ "$worktree" = "$(pwd -P)" ] || die "run from the root of the bench worktree"
 
 task_id="$(basename "$task_file" .md)"
 branch="task/$task_id"
@@ -63,7 +63,7 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 3
 fi
 
-# HEAD is the claim commit only if the lane committed nothing on top of it.
+# HEAD is the claim commit only if the bench committed nothing on top of it.
 head="$(git rev-parse HEAD)"
 case "$(git log -1 --format=%s HEAD)" in
   "chore(claim): task $task_id "*) ;;

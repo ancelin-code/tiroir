@@ -1,7 +1,7 @@
 """The store schema (`tiroir.yaml`): loading, validation and canonical writing.
 
 The shape, defaults and error codes are fixed by the schema contract
-(`delivery/contracts/schema.md`). Loading reports every violation it finds,
+(`specs/contracts/schema.md`). Loading reports every violation it finds,
 not only the first. Optional keys are kept as written (`None` when absent);
 the defaults the contract names are exposed as properties.
 

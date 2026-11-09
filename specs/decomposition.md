@@ -5,13 +5,13 @@
 
 ## Source
 
-- Requirements: [`delivery/prd.md`](prd.md) (approved 2026-11-04).
-- Decision records: [`delivery/decisions/`](decisions/), ADR-001 to ADR-016
+- Requirements: [`specs/prd.md`](prd.md) (approved 2026-11-04).
+- Decision records: [`specs/decisions/`](decisions/), ADR-001 to ADR-016
   (accepted 2026-10-22). The skeleton relies most on ADR-002 (Python, tooling,
   container), ADR-003 (store format), ADR-004 (server database), ADR-005 and
   ADR-007 (index, lexical retrieval), ADR-009 (process model), ADR-010 (Git on
   the server), ADR-015 (authentication) and ADR-016 (deployment).
-- Contracts: [`delivery/contracts/`](contracts/): `schema.md`,
+- Contracts: [`specs/contracts/`](contracts/): `schema.md`,
   `store-layout.md`, `core-api.md`, `mcp-tools.md`, `http-routes.md`,
   `cli.md`. `claude-code-hook.md` is not used before the retrieval milestone.
 - The repository holds no code yet: everything below is built from scratch.
@@ -30,7 +30,7 @@ the index. Everything later builds on these pieces.
 
 **Exit:** On a VPS with a domain name, `docker compose up -d` and `tiroir admin init` give a server answering over HTTPS; the administrator creates a personal store from the `accounting-firm` preset; in Claude Desktop, after adding the server as a custom connector and signing in, the member appends a log entry to a client's drawer and finds it with a keyword search within 2 seconds; the entry is one commit, with tiroir's trailers, in the store's history.
 **Requirements:** A1 (part), A2 (part), A4 (part), A5, M1 (part), M3 (part), S1 (part), S2 (part), S4 (part), S6 (part), R1 (part), R2 (part), R3, R6, R7 (part), W1, W4 (part), Y1 (part), Y2, Y5 (part), U1 (part), U4 (part), U5 (part), D1 (part), D3
-**Epics:** foundation, store, search, server, deploy
+**Epics:** foundation, store, search, server, deploy, docs
 
 ### retrieval
 
@@ -138,9 +138,17 @@ follow a written guide from a fresh VPS to Claude Desktop finding a note
 - `deploy-001` - Build the container image and the Compose stack behind Caddy
 - `deploy-002` - Write the skeleton installation guide and run the exit check
 
+### docs
+
+The user documentation is a Zensical site published to GitHub Pages, which every
+later milestone updates (AGENTS.md, "User documentation").
+
+- `docs-001` - Publish the user documentation as a Zensical site on GitHub Pages
+- `docs-002` - Polish the documentation site and document custom schemas for administrators
+
 ## Parallelism
 
-**Run as:** lanes
+**Run as:** benches
 
 - `foundation-001` runs alone (`parallel: false`): it creates `pyproject.toml`,
   `uv.lock`, `mise.toml`, the package layout and CI, which every other task
@@ -157,7 +165,7 @@ follow a written guide from a fresh VPS to Claude Desktop finding a note
   `mise.toml`. Each such pair declares `conflicts_with`; most are also ordered
   by dependencies, and `server-002` and `server-003`, which are not, never run
   together.
-- After `foundation-001`, three lanes can start at once: `store-001`,
+- After `foundation-001`, three benches can start at once: `store-001`,
   `store-003` and `server-001`. Then `store-002`, `server-002` and
   `deploy-001` run in parallel.
 

@@ -1,4 +1,4 @@
-# Delivery conventions
+# Établi conventions
 
 The shared contract for Établi. Task files, branches, claims, tiers
 and pull requests follow these rules. Skills reference this file rather
@@ -11,20 +11,20 @@ belongs to, never another one: the same token means a different directory in
 each skill's own files. A command spanning two skills names the other one as
 `<its-name>` instead, for example `<etabli-status>`, resolved to that
 skill's own installed directory the same way `<skill-root>` is. Neither is a
-path assumed relative to the skill doing the naming; the kit does not require
+path assumed relative to the skill doing the naming; Établi does not require
 one skill to sit at a fixed offset from another.
 
 ## Projects, epics and tasks
 
-Three nested units, and an optional fourth between the first two. Every
-artifact the kit produces belongs to one of them.
+Three nested units, and a fourth between the first two. Every
+artifact Établi produces belongs to one of them.
 
 | Unit | What it is | Where it is written |
 |---|---|---|
-| Project | One team, one set of requirements, in one repository or [several](#several-repositories) | `delivery/prd.md`, with its decision records and contracts |
-| Milestone | Optional. An ordered, end-to-end slice of the project: a group of epics with an observable exit criterion | the Milestones section of `delivery/decomposition.md`, then `delivery/milestones/<slug>.md` once reviewed |
-| Epic | A coherent slice of the project, small enough for one person to hold in their head | a section of `delivery/decomposition.md` |
-| Task | One unit of work: one branch, one lane, one pull request | `delivery/tasks/<id>.md` |
+| Project | One team, one set of requirements, in one repository or [several](#several-repositories) | `specs/prd.md`, with its decision records and contracts |
+| Milestone | The [default](#milestones). An ordered, end-to-end slice of the project: a group of epics with an observable exit criterion | the Milestones section of `specs/decomposition.md`, then `specs/milestones/<slug>.md` once reviewed |
+| Epic | A coherent slice of the project, small enough for one person to hold in their head | a section of `specs/decomposition.md` |
+| Task | One unit of work: one branch, one bench, one pull request | `specs/tasks/<id>.md` |
 
 A project has exactly one requirements document. New work on the same project
 revises that document and becomes new epics; it does not start a second one.
@@ -34,14 +34,19 @@ and `etabli-decompose` cuts a bigger group into several.
 
 ## Milestones
 
-A project too large or too uncertain to cut in one go is delivered in
-milestones, each a working end-to-end slice, with a stop after each to look at
-what it taught. Only decomposition and execution are incremental: the
-requirements and the design spine are written in full up front, and a
-milestone review that finds them wrong revises them through their own gates.
+A project is delivered in milestones by default, each a working end-to-end
+slice that can be run and tested, even if some features are very simple or
+missing, with a stop after each to look at what it taught. Cut in one go, a
+project is not incremental: nothing makes anyone stop and adjust. Only
+decomposition and execution are incremental: the requirements and the design
+spine are written in full up front, and a milestone review that finds them
+wrong revises them through their own gates.
 
-A project without a Milestones section in `delivery/decomposition.md` has no
-milestones, and nothing in this section applies to it.
+Only the user may decide against milestones. An agent that finds them senseless
+for a project says why and asks; it never drops them itself. The decision
+replaces the Milestones section of `specs/decomposition.md` with a
+`**Milestones:** none, by <name>, <date>: <reason>` line, and nothing in this
+section then applies.
 
 - **The plan.** The Milestones section lists every milestone in delivery order,
   each under `### <slug>` with an `**Exit:**` line, the outcome that shows the
@@ -55,7 +60,7 @@ milestones, and nothing in this section applies to it.
   `**Epics:**` line. A task's milestone is its epic's.
 - **The gate.** When every task of the current milestone is merged, a person
   checks its exit criterion against the running system and records the review
-  in `delivery/milestones/<slug>.md`: whether the exit held, the coverage, what
+  in `specs/milestones/<slug>.md`: whether the exit held, the coverage, what
   was learned, and the decision. Approving that note closes the milestone.
   The decision is to **continue**, and the next milestone is cut, which puts
   the decomposition back to draft for its own approval; or to **revise** the
@@ -77,7 +82,7 @@ A milestone's state is derived, like a task's:
 
 ## Requirement ids
 
-An outcome in `delivery/prd.md` carries a stable id, so that tasks and
+An outcome in `specs/prd.md` carries a stable id, so that tasks and
 milestones can name it:
 
 ```markdown
@@ -88,7 +93,7 @@ milestones can name it:
 The id is the bolded token ending in a dot at the start of the bullet: letters,
 digits and hyphens, such as `A4`, `X1a` or `SEC-2`. Ids are never reused once
 approved; a dropped requirement leaves its id unused. Only lines in this form
-are requirements to the kit's scripts: invariants and exclusions are not
+are requirements to Établi's scripts: invariants and exclusions are not
 tracked by id.
 
 A task names what it covers under `## Covers`, one requirement per line, and
@@ -108,26 +113,26 @@ planned (only unmerged tasks cover it) or not started.
 
 ## Where artifacts live
 
-Every path the kit writes or reads is relative to the root of the repository
-holding the plan, under a single `delivery/` directory. Nothing needs searching
+Every path Établi writes or reads is relative to the root of the repository
+holding the plan, under a single `specs/` directory. Nothing needs searching
 for: when a file is not at its path below, it does not exist yet.
 
 | Artifact | Path | Written by |
 |---|---|---|
-| Requirements | `delivery/prd.md` | `etabli-spec`, stage A |
-| Decision records | the repository's existing decision record directory, else `delivery/decisions/ADR-<nnn>-<slug>.md` | `etabli-spec`, stage B |
-| Contracts | `delivery/contracts/<interface>.md` | `etabli-spec`, stage B |
-| Decomposition summary | `delivery/decomposition.md` | `etabli-decompose` |
-| Task files | `delivery/tasks/<id>.md` | `etabli-decompose`, or the orchestrator on the direct path |
-| Milestone reviews | `delivery/milestones/<slug>.md` | `etabli-decompose`, with the human who approves it |
-| Review lenses | `delivery/review-lenses.conf` | `install-routing.sh` seeds it; the project's maintainers edit it |
+| Requirements | `specs/prd.md` | `etabli-spec`, stage A |
+| Decision records | the repository's existing decision record directory, else `specs/decisions/ADR-<nnn>-<slug>.md` | `etabli-spec`, stage B |
+| Contracts | `specs/contracts/<interface>.md` | `etabli-spec`, stage B |
+| Decomposition summary | `specs/decomposition.md` | `etabli-decompose` |
+| Task files | `specs/tasks/<id>.md` | `etabli-decompose`, or the orchestrator on the direct path |
+| Milestone reviews | `specs/milestones/<slug>.md` | `etabli-decompose`, with the human who approves it |
+| Review lenses | `specs/review-lenses.conf` | `install-routing.sh` seeds it; the project's maintainers edit it |
 
 An existing decision record directory is one already holding ADR files, such as
 `docs/adr/` or `docs/decisions/`. Check those two before creating
-`delivery/decisions/`; extending the repository's own record beats starting a
+`specs/decisions/`; extending the repository's own record beats starting a
 parallel one.
 
-The kit's scripts default to `delivery/tasks` and run from the repository root,
+Établi's scripts default to `specs/tasks` and run from the repository root,
 so none of them needs a path argument.
 
 Files shipped with a skill are named from that skill's root, for example
@@ -148,7 +153,7 @@ The id is used verbatim in three places, so it must stay a valid slug
 
 | Place | Form |
 |---|---|
-| Task file | `delivery/tasks/<id>.md` |
+| Task file | `specs/tasks/<id>.md` |
 | Branch | `task/<id>` |
 | Worktree | one per task, outside the repository working tree |
 
@@ -201,8 +206,8 @@ sources to keep in sync by hand, so nothing is copied.
 
 - **Layout.** Every repository of the project is cloned side by side in one
   directory, `<project>/<repo>`, with the directory named after the repository.
-  The kit finds a repository by that name, beside the planning one.
-- **Planning repository.** The repository that holds `delivery/`: the one whose
+  Établi finds a repository by that name, beside the planning one.
+- **Planning repository.** The repository that holds `specs/`: the one whose
   lifecycle is the project's. Usually the main code repository; a dedicated
   `<project>-hub` repository when three or more share the work evenly.
 - **Tasks.** A task names where its change lands with `repo:`. Its claim, branch,
@@ -211,7 +216,7 @@ sources to keep in sync by hand, so nothing is copied.
 - **Decisions.** A decision about the project goes in the planning
   repository's record. A decision confined to one repository's internals goes in
   that repository's own record, written by the task that makes it.
-- **Contracts.** `delivery/contracts/` holds the agreed interface while it is
+- **Contracts.** `specs/contracts/` holds the agreed interface while it is
   being built. Once built, the repository that produces it owns the as-built
   form (an OpenAPI document, a schema, a published package), and consumers pin
   a version of it. The contract file then points there instead of restating it.
@@ -297,24 +302,24 @@ one section per tier, read with `git config`:
 
 `harness`, `model`, `advisor` and `reviewer` are all optional: a missing `harness` means
 any, and a missing `model` means the harness's own default. `advisor` names a
-stronger model the lane may consult at its own decision points; only Claude
+stronger model the bench may consult at its own decision points; only Claude
 Code has one, and it must be at least as capable as `model`. Without it, a
-lane gets whatever advisor the developer's harness settings name. A mapping
+bench gets whatever advisor the developer's harness settings name. A mapping
 applies only to the harness it names, so a model id never reaches a harness
 that would refuse it. A tier that no file names passes no model flag at all.
 Comments, quoting and syntax errors are git's.
 
 Two files are read, and the first to name a tier decides all of it:
 
-1. The developer's own: `$DELIVERY_TIERS`, else
+1. The developer's own: `$ETABLI_TIERS`, else
    `$XDG_CONFIG_HOME/etabli/tiers.conf` (`~/.config/etabli/tiers.conf`).
    It lives outside every repository, so it is never committed by accident.
-2. The project's: `delivery/tiers.conf`, committed when a team agrees on one.
+2. The project's: `specs/tiers.conf`, committed when a team agrees on one.
 
-A lane runs on the first of: `--harness`, the harness its tier maps to,
-`$DELIVERY_HARNESS`, then the first harness found installed.
+A bench runs on the first of: `--harness`, the harness its tier maps to,
+`$ETABLI_HARNESS`, then the first harness found installed.
 
-A lane's second session, `etabli-refine`, reviews on a stronger model than
+A bench's second session, `etabli-refine`, reviews on a stronger model than
 the one that wrote the change. It runs on the tier's `reviewer`, a model for the
 tier's own harness, when the tier names one. Otherwise it runs as the tier
 above would: `chore` as `build`, `build` as `plan`, `plan` as `plan`, on that
@@ -324,8 +329,8 @@ tier's harness when it is installed and with its model and advisor.
 ## Review lenses
 
 A lens is a concern that deserves its own review pass, such as security or
-data. The project names its lenses in `delivery/review-lenses.conf`, one per
-line: the lens, the review skill that covers it (`-` for none), and optionally
+data. The project names its lenses in `specs/review-lenses.conf`, one per
+line: the lens, the review skill that covers it (`-` for the harness's own review), and optionally
 the path patterns that bring it in.
 
 ```text
@@ -337,7 +342,7 @@ data       databricks-dbsql  *.sql */pipelines/*
 
 A pattern matches the whole path of a file the pull request changes, and `*`
 crosses directories. `general` applies to every pull request. The skill names
-are the project's choice: the kit ships no reviewer.
+are the project's choice: Établi ships no reviewer.
 
 A pull request needs a lens when any of these holds:
 
@@ -350,14 +355,14 @@ the file, only the general review is suggested, and it is the harness's own.
 
 ## Commits and pull requests
 
-A lane does not commit. Its two sessions, `etabli-implement` then
+A bench does not commit. Its two sessions, `etabli-implement` then
 `etabli-refine`, leave the change in the worktree. When the first exits
 cleanly,
-`<etabli-orchestrator>/scripts/publish-lane.sh` commits the worktree as
+`<etabli-orchestrator>/scripts/publish-bench.sh` commits the worktree as
 `<type>(<epic>): <title>`, pushes it, and opens the draft pull request. The body
-is the lane's handoff report, written in the repository's pull request template
+is the bench's handoff report, written in the repository's pull request template
 when there is one, else the task's acceptance criteria followed by the report.
-The lane worktree holds nothing but the task's work, so it stages all of it.
+The bench worktree holds nothing but the task's work, so it stages all of it.
 
 Anywhere else, the harness already knows git. These are the conventions it
 cannot infer:
@@ -378,4 +383,4 @@ abandoned along the way, or a narrative of how the agent arrived at the result.
 A task is done when its acceptance criteria hold, the validation proportional to
 the change has been run and reported, and the documentation pages affected by
 the change have been updated in the same pull request. Plans live in
-`delivery/`; as-built truth lives in the regular documentation pages.
+`specs/`; as-built truth lives in the regular documentation pages.

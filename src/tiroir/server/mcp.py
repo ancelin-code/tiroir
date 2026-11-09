@@ -1,4 +1,4 @@
-"""The MCP server (`delivery/contracts/mcp-tools.md`): tools over the core facade.
+"""The MCP server (`specs/contracts/mcp-tools.md`): tools over the core facade.
 
 Every call is made as the member of the request's access token. Results are
 Markdown for the model, with memory quoted as reference data (C4), and the

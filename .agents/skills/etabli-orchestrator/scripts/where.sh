@@ -3,7 +3,7 @@ set -eu
 
 # Where the project stands and what comes next, in one call.
 #
-# Everything is read from delivery/ and git, the same sources a phase starts
+# Everything is read from specs/ and git, the same sources a phase starts
 # from, so the answer never depends on a conversation having been kept alive.
 # The next action is derived here rather than reasoned out by the agent: the
 # rules are fixed, and applying them by hand costs a dozen tool calls.
@@ -29,7 +29,7 @@ Run from the repository root. Prints, tab-separated:
                                       per task in review, one row per lens; skill
                                       is - when no skill is mapped to the lens
   NEXT     <action> <detail>          what to do now; more than one when both apply.
-                                      repair-install, alone, when a kit skill is
+                                      repair-install, alone, when an Établi skill is
                                       missing beside this one
 
 Options:
@@ -58,8 +58,8 @@ done
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the repository root"
 
-# The kit installs as a whole: its skills find each other as siblings, the way
-# launch-lanes.sh finds claim.sh and etabli-implement. An install whose skills
+# Établi installs as a whole: its skills find each other as siblings, the way
+# launch-benches.sh finds claim.sh and etabli-implement. An install whose skills
 # are split between two directories, as an update that relinks some skills and
 # leaves others copied produces, loses its siblings, so it is the first thing
 # to fix: nothing after it can be trusted.
@@ -69,7 +69,7 @@ for skill in etabli-spec etabli-decompose etabli-implement etabli-refine etabli-
   [ -f "$here/../../$skill/SKILL.md" ] || missing="$missing${missing:+ }$skill"
 done
 if [ -n "$missing" ]; then
-  printf 'NEXT\trepair-install\t%s\n' "not beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): $missing. The kit installs whole: remove every etabli-* skill directory, then reinstall them all in one 'npx skills add', naming at least one agent that reads .agents/skills"
+  printf 'NEXT\trepair-install\t%s\n' "not beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): $missing. Établi installs whole: remove every etabli-* skill directory, then reinstall them all in one 'npx skills add', naming at least one agent that reads .agents/skills"
   exit 0
 fi
 status_dir="$(cd "$here/../../etabli-status/scripts" && pwd)"
@@ -97,7 +97,7 @@ else
   routing=missing
 fi
 
-prd="delivery/prd.md"
+prd="specs/prd.md"
 if [ ! -f "$prd" ]; then
   prd_state=missing
 elif [ "$(status_of "$prd")" = approved ]; then
@@ -108,16 +108,16 @@ fi
 printf 'PHASE\trequirements\t%s\t%s\n' "$prd_state" "$prd"
 
 # The spine is optional: a project whose parts need no agreed interface has
-# none. It is pending while any contract is not agreed or any record the kit
+# none. It is pending while any contract is not agreed or any record Établi
 # may have written is still proposed.
 pending=""
 contracts=0
-for file in delivery/contracts/*.md; do
+for file in specs/contracts/*.md; do
   [ -e "$file" ] || continue
   contracts=$((contracts + 1))
   [ "$(status_of "$file")" = agreed ] || pending="${pending:+$pending }$file"
 done
-for file in delivery/decisions/*.md docs/adr/*.md docs/decisions/*.md; do
+for file in specs/decisions/*.md docs/adr/*.md docs/decisions/*.md; do
   [ -e "$file" ] || continue
   [ "$(status_of "$file")" != proposed ] || pending="${pending:+$pending }$file"
 done
@@ -128,9 +128,9 @@ elif [ "$contracts" -gt 0 ]; then
 else
   design_state=none
 fi
-printf 'PHASE\tdesign\t%s\t%s\n' "$design_state" "${pending:-delivery/contracts/}"
+printf 'PHASE\tdesign\t%s\t%s\n' "$design_state" "${pending:-specs/contracts/}"
 
-decomposition="delivery/decomposition.md"
+decomposition="specs/decomposition.md"
 if [ ! -f "$decomposition" ]; then
   decomposition_state=missing
 elif [ "$(status_of "$decomposition")" = approved ]; then
@@ -156,14 +156,14 @@ next() {
 }
 
 [ "$routing" = present ] ||
-  next install-routing "route this project's requests to the kit: sh $shown/install-routing.sh"
+  next install-routing "route this project's requests to Établi: sh $shown/install-routing.sh"
 
 if [ "$prd_state" = missing ]; then
-  next write-requirements "no delivery/prd.md: write it with etabli-spec, stage A"
+  next write-requirements "no specs/prd.md: write it with etabli-spec, stage A"
   exit 0
 fi
 if [ "$prd_state" = draft ]; then
-  next approve-requirements "delivery/prd.md awaits human approval"
+  next approve-requirements "specs/prd.md awaits human approval"
   exit 0
 fi
 if [ "$design_state" = pending ]; then
@@ -179,11 +179,11 @@ if [ "$decomposition_state" = missing ]; then
   exit 0
 fi
 if [ "$decomposition_state" = draft ]; then
-  next approve-decomposition "delivery/decomposition.md and delivery/tasks/ await human approval"
+  next approve-decomposition "specs/decomposition.md and specs/tasks/ await human approval"
   exit 0
 fi
 
-# Lanes. Task state is etabli-status's to derive; it fails loudly when pull
+# Benches. Task state is etabli-status's to derive; it fails loudly when pull
 # request state cannot be read, and so does this.
 rows="$(sh "$status_script" "$@")" ||
   die "task state could not be read; see the error above"
@@ -208,7 +208,7 @@ trap 'rm -rf "$store"' EXIT
 tab="$(printf '\t')"
 
 # One line per lens: its name, the skill that reviews it, then its path patterns.
-lenses_file="delivery/review-lenses.conf"
+lenses_file="specs/review-lenses.conf"
 lens_table=""
 if [ -f "$lenses_file" ]; then
   lens_table="$(awk '$1 != "" && $1 !~ /^#/' "$lenses_file")"
@@ -239,7 +239,7 @@ task_lenses() {
     NR == 1 && $0 != "---" { exit }
     NR > 1 && $0 == "---" { exit }
     /^review:/ { sub(/^review:[ \t]*/, ""); gsub(/[][,]/, " "); print; exit }
-  ' "delivery/tasks/$1.md" 2>/dev/null || true
+  ' "specs/tasks/$1.md" 2>/dev/null || true
 }
 
 # The clone a task lands in: a sibling named by its repo field, else this one.
@@ -250,7 +250,7 @@ task_repo() {
     NR == 1 && $0 != "---" { exit }
     NR > 1 && $0 == "---" { exit }
     /^repo:/ { sub(/^repo:[ \t]*/, ""); sub(/[ \t]+$/, ""); print; exit }
-  ' "delivery/tasks/$1.md" 2>/dev/null || true
+  ' "specs/tasks/$1.md" 2>/dev/null || true
 }
 
 # The lenses of the pull request being read are lines of "<lens><TAB><reasons>"
@@ -303,21 +303,21 @@ done
 [ -z "$in_review" ] || next review "pull requests await review, one pass per REVIEW row: $in_review"
 
 # Milestones. Only the current one, the first whose review note is not
-# approved, has work left; its state says whether that work is lanes, a cut,
+# approved, has work left; its state says whether that work is benches, a cut,
 # or a review. A plan without milestones prints no MILESTONE row.
 current="$(printf '%s\n' "$rows" | awk -F'\t' '$1 == "MILESTONE" && $3 != "closed" && $3 != "planned" { print $2 "\t" $3; exit }')"
 milestone="${current%%"$tab"*}"
 case "${current#*"$tab"}" in
   undecomposed)
-    next decompose-milestone "$milestone: decompose it with etabli-decompose, from delivery/milestones/ and the plan in delivery/decomposition.md"
+    next decompose-milestone "$milestone: decompose it with etabli-decompose, from specs/milestones/ and the plan in specs/decomposition.md"
     exit 0
     ;;
   merged)
-    next review-milestone "every task of $milestone is merged: check its exit criterion, then write delivery/milestones/$milestone.md with etabli-decompose (coverage: sh $(shown_path "$status_dir")/coverage.sh --milestone $milestone)"
+    next review-milestone "every task of $milestone is merged: check its exit criterion, then write specs/milestones/$milestone.md with etabli-decompose (coverage: sh $(shown_path "$status_dir")/coverage.sh --milestone $milestone)"
     exit 0
     ;;
   reviewing)
-    next approve-milestone-review "delivery/milestones/$milestone.md awaits human approval"
+    next approve-milestone-review "specs/milestones/$milestone.md awaits human approval"
     exit 0
     ;;
 esac
@@ -329,11 +329,11 @@ runs_alone() {
     NR == 1 && $0 != "---" { exit }
     NR > 1 && $0 == "---" { exit }
     /^parallel:/ { sub(/^parallel:[ \t]*/, ""); sub(/[ \t]+$/, ""); print; exit }
-  ' "delivery/tasks/$1.md" 2>/dev/null)" = false ]
+  ' "specs/tasks/$1.md" 2>/dev/null)" = false ]
 }
 
 if [ -z "$ready$in_flight$blocked" ]; then
-  next complete "every task is merged; new work starts by revising delivery/prd.md"
+  next complete "every task is merged; new work starts by revising specs/prd.md"
 elif [ -n "$ready" ]; then
   alone_in_flight="" shared="" alone=""
   for id in $in_flight; do ! runs_alone "$id" || alone_in_flight="$id"; done
@@ -343,11 +343,11 @@ elif [ -n "$ready" ]; then
   if [ -n "$alone_in_flight" ]; then
     next wait "$alone_in_flight runs alone and is in flight; then $ready"
   elif [ -n "$shared" ]; then
-    next start "launch lanes for: $shared (sh $shown/launch-lanes.sh)${alone:+; after they merge, alone: $alone}"
+    next start "launch benches for: $shared (sh $shown/launch-benches.sh)${alone:+; after they merge, alone: $alone}"
   elif [ -n "$in_flight" ]; then
     next wait "$alone runs alone, after in-flight work merges: $in_flight"
   else
-    next start "alone, first of: $alone (sh $shown/launch-lanes.sh ${alone%% *})"
+    next start "alone, first of: $alone (sh $shown/launch-benches.sh ${alone%% *})"
   fi
 elif [ -n "$in_flight" ]; then
   next wait "nothing is ready until in-flight work merges: $in_flight"

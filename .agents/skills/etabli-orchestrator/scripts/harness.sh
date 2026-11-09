@@ -1,7 +1,7 @@
 # shellcheck shell=sh
-# Harness adapters, sourced by launch-lanes.sh. Not run on its own.
+# Harness adapters, sourced by launch-benches.sh. Not run on its own.
 #
-# A harness is the agent CLI that runs a lane's session. Everything the launcher
+# A harness is the agent CLI that runs a bench's session. Everything the launcher
 # knows about one is in this file, so supporting another is a new name in
 # $HARNESSES and a new branch in harness_run and nowhere else.
 #
@@ -15,17 +15,17 @@
 
 # The harnesses the launcher can drive, in the order "auto" tries them. The
 # binary of each is named like the harness. "custom" is not in the list: it is
-# chosen on purpose, with DELIVERY_LANE_CMD.
+# chosen on purpose, with ETABLI_BENCH_CMD.
 HARNESSES="claude copilot codex opencode pi"
 
 is_harness() {
   case " $HARNESSES custom " in *" $1 "*) return 0 ;; *) return 1 ;; esac
 }
 
-# The prompt that starts one of a lane's sessions. Claude Code, and Copilot CLI
+# The prompt that starts one of a bench's sessions. Claude Code, and Copilot CLI
 # inside the repository that holds the skills, resolve "/<skill> <args>", the
 # skill being named by its directory. Every other case is told to read the skill
-# file, which needs no skill discovery from the harness: the lane may be in
+# file, which needs no skill discovery from the harness: the bench may be in
 # another repository, and not every harness reads every skills directory.
 #   harness_prompt <harness> <cross-repo: 0|1> <skill file> <arguments>
 harness_prompt() {
@@ -35,7 +35,7 @@ harness_prompt() {
   esac
 }
 
-# Run one lane's session in the current directory, the lane's worktree, and
+# Run one bench's session in the current directory, the bench's worktree, and
 # return its exit status.
 #   harness_run <harness> <prompt> <model> <advisor> <add-dir> <plan-dir> <web: 0|1>
 # <model>, <advisor> and <add-dir> are empty when there is none to pass.
@@ -45,13 +45,13 @@ harness_run() {
   case "$harness" in
     claude)
       # acceptEdits alone denies every shell command in -p mode, and nobody is
-      # there to approve one, so the lane could not run a single test. Allowing
+      # there to approve one, so the bench could not run a single test. Allowing
       # Bash matches Copilot's --allow-all-tools; the denies still win over it.
       # Web tools are denied outright rather than left unallowed: a developer's
       # own settings may allow them, and --no-web has to hold regardless.
       # An advisor that cannot act as one ends the session at startup, before it
       # changes anything; one less capable than the main model is only warned
-      # about, and the lane runs without it.
+      # about, and the bench runs without it.
       set -- claude -p "$prompt"
       [ -z "$add_dir" ] || set -- "$@" --add-dir "$add_dir"
       [ -z "$model" ] || set -- "$@" --model "$model"
@@ -94,25 +94,25 @@ harness_run() {
       ;;
     pi)
       # Pi has no permission system, so nothing asks and nothing is denied: run
-      # lanes on it in a container or a throwaway machine. Its tools are read,
+      # benches on it in a container or a throwaway machine. Its tools are read,
       # write, edit and bash, so there are no web tools to take away.
       set -- pi -p "$prompt"
       [ -z "$model" ] || set -- "$@" --model "$model"
       ;;
     custom)
-      # DELIVERY_LANE_CMD is a shell command line. Its placeholders become
+      # ETABLI_BENCH_CMD is a shell command line. Its placeholders become
       # references to environment variables, never pasted text, so a prompt
       # holding quotes or $(...) cannot change the command.
-      [ -n "${DELIVERY_LANE_CMD:-}" ] || { printf 'ERROR\tDELIVERY_LANE_CMD is not set\n' >&2; return 1; }
-      DELIVERY_PROMPT="$prompt" DELIVERY_MODEL="$model" DELIVERY_WORKTREE="$PWD" \
-        DELIVERY_PLAN_DIR="$plan_dir" DELIVERY_WEB="$web"
-      export DELIVERY_PROMPT DELIVERY_MODEL DELIVERY_WORKTREE DELIVERY_PLAN_DIR DELIVERY_WEB
+      [ -n "${ETABLI_BENCH_CMD:-}" ] || { printf 'ERROR\tETABLI_BENCH_CMD is not set\n' >&2; return 1; }
+      ETABLI_PROMPT="$prompt" ETABLI_MODEL="$model" ETABLI_WORKTREE="$PWD" \
+        ETABLI_PLAN_DIR="$plan_dir" ETABLI_WEB="$web"
+      export ETABLI_PROMPT ETABLI_MODEL ETABLI_WORKTREE ETABLI_PLAN_DIR ETABLI_WEB
       # shellcheck disable=SC2016 # the $ is for the command's shell, not this one
-      set -- sh -c "$(printf '%s' "$DELIVERY_LANE_CMD" | sed \
-        -e 's/{prompt}/"$DELIVERY_PROMPT"/g' \
-        -e 's/{model}/"$DELIVERY_MODEL"/g' \
-        -e 's/{worktree}/"$DELIVERY_WORKTREE"/g' \
-        -e 's/{plan_dir}/"$DELIVERY_PLAN_DIR"/g')"
+      set -- sh -c "$(printf '%s' "$ETABLI_BENCH_CMD" | sed \
+        -e 's/{prompt}/"$ETABLI_PROMPT"/g' \
+        -e 's/{model}/"$ETABLI_MODEL"/g' \
+        -e 's/{worktree}/"$ETABLI_WORKTREE"/g' \
+        -e 's/{plan_dir}/"$ETABLI_PLAN_DIR"/g')"
       ;;
     *)
       printf 'ERROR\tunknown harness: %s\n' "$harness" >&2

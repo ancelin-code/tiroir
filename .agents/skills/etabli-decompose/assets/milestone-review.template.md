@@ -5,7 +5,7 @@
 
 ## Exit criterion
 
-<The exit line from `delivery/decomposition.md`, then whether it held and the
+<The exit line from `specs/decomposition.md`, then whether it held and the
 evidence: what was run, against which deployment, and what was observed. A
 criterion nobody exercised did not hold.>
 
@@ -26,7 +26,7 @@ Only what changes something later; leave out what went to plan.>
 **Decision:** continue | revise
 
 <Continue: the next milestone is cut as planned, and anything below adjusts
-it. Revise: name each artifact to change (`delivery/prd.md`, a decision
+it. Revise: name each artifact to change (`specs/prd.md`, a decision
 record, the milestone plan) and what changes. Each is revised and approved
 through its own gate before the next milestone is cut.>
 

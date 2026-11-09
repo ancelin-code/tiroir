@@ -1,4 +1,4 @@
-"""The core API (`delivery/contracts/core-api.md`): the one door into the core.
+"""The core API (`specs/contracts/core-api.md`): the one door into the core.
 
 A `Core` is opened on a data directory. Members act through a `MemberContext`
 and administrators through an `AdminContext`; both read the server database at

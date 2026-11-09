@@ -2,7 +2,7 @@
 name: etabli-implement
 author: Ancelin Serre
 description: >-
-  Part of Établi, invoked by etabli-orchestrator inside a lane. Turn one task
+  Part of Établi, invoked by etabli-orchestrator inside a bench. Turn one task
   into a validated change in the working tree: resolve its acceptance criteria, freeze the
   scope, implement, validate proportionally with the repository's own commands, check the
   diff back against the criteria, and hand off. Use when implementing a task file from a
@@ -11,13 +11,13 @@ description: >-
 license: Apache-2.0
 repository: https://github.com/ancelin-code/etabli.git
 product-version: etabli@v0
-version: "0.1.0"
+version: "0.2.0"
 keywords:
   - implement
   - task
   - acceptance-criteria
   - validation
-  - lane
+  - bench
 spec-version: "1.0"
 compatibility:
   - git@>=2.5
@@ -26,7 +26,7 @@ metadata:
   owner: ancelin-code
 ---
 
-# Delivery Implement
+# Établi Implement
 
 Take one task that already exists, ground it in the repository as it actually
 is, and produce a validated change in the working tree with a handoff report.
@@ -42,14 +42,14 @@ A task file from a decomposed epic, containing acceptance criteria and the files
 in scope. A single change with explicit acceptance criteria works equally well.
 
 Invoked as `/etabli-implement <path-to-task-file>`, read that file. Invoked with
-a bare task id, the file is `delivery/tasks/<id>.md` under the repository root.
-The requirements it links are at `delivery/prd.md` and the contracts at
-`delivery/contracts/`; read them only when the task leaves a criterion unclear.
+a bare task id, the file is `specs/tasks/<id>.md` under the repository root.
+The requirements it links are at `specs/prd.md` and the contracts at
+`specs/contracts/`; read them only when the task leaves a criterion unclear.
 These paths are relative to the repository holding the task file, which is not
 the one being changed when the task lands in another repository of the project.
 With no argument at all, ask which task before doing anything else.
 
-Invoked with `--report <path>`, as the lane launcher does, also write the handoff
+Invoked with `--report <path>`, as the bench launcher does, also write the handoff
 report to that file. The launcher publishes it as the pull request body, so it is
 the only account of the run a reviewer sees. When the repository has a pull
 request template, write the report as that template filled in, naming the task
@@ -93,7 +93,7 @@ Write down what is in scope and what is out, derived from the acceptance
 criteria. This is the reference for the rest of the run.
 
 The documentation pages this change makes wrong are in scope: the reference,
-guide or README a reader would now be misled by. Plans under `delivery/` are
+guide or README a reader would now be misled by. Plans under `specs/` are
 not documentation; leave them alone.
 
 Anything discovered later that is real but outside that contract, a nearby bug,
@@ -148,7 +148,7 @@ uncommitted. `etabli-refine` reviews and simplifies the change next, from this
 report: the validation commands it names are the ones it re-runs. It must run in
 a separate session, never this one, which would review its own work. End the
 report by naming that next step, `etabli-refine` on this task file, so a run
-outside a lane does not read "stop" as "done".
+outside a bench does not read "stop" as "done".
 
 ## When to stop instead
 

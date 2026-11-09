@@ -1,16 +1,16 @@
 #!/bin/sh
 set -eu
 
-# Start one lane per task: a git worktree, a claim, and a headless agent session
+# Start one bench per task: a git worktree, a claim, and a headless agent session
 # that ends in a draft pull request.
 #
 # Task ids come from the arguments, or from stdin when none are given, so this
 # composes with whatever decided the tasks were ready:
 #
-#   sh status.sh --ready | awk '$1=="TASK" {print $2}' | sh launch-lanes.sh
+#   sh status.sh --ready | awk '$1=="TASK" {print $2}' | sh launch-benches.sh
 #
-# This script does not decide readiness. It decides how many lanes run, that two
-# conflicting tasks never run together, and that a lane only starts on a task
+# This script does not decide readiness. It decides how many benches run, that two
+# conflicting tasks never run together, and that a bench only starts on a task
 # this machine actually won the claim for.
 
 die() {
@@ -20,45 +20,47 @@ die() {
 
 usage() {
   cat <<'USAGE'
-usage: sh launch-lanes.sh [options] [task-id...]
+usage: sh launch-benches.sh [options] [task-id...]
 
-Starts a lane per task id, reading ids from stdin when none are given. A task
+Starts a bench per task id, reading ids from stdin when none are given. A task
 with a repo field gets its worktree, claim and pull request in that clone,
-beside this repository; the lane reads its task file and contracts here.
+beside this repository; the bench reads its task file and contracts here.
 
-A lane is two sessions in its worktree: etabli-implement on the task's tier,
+A bench is two sessions in its worktree: etabli-implement on the task's tier,
 then, when it left a change, etabli-refine on a stronger one, which reviews
-the change, fixes what it finds and simplifies it. A lane whose implementation
-session exits cleanly is published as a draft pull request by publish-lane.sh,
+the change, fixes what it finds and simplifies it. A bench whose implementation
+session exits cleanly is published as a draft pull request by publish-bench.sh,
 whatever the refinement did; one whose implementation session fails without
-leaving work behind gives its claim back through release-lane.sh. Both sit
+leaving work behind gives its claim back through release-bench.sh. Both sit
 beside this script.
 
 Options:
-  --max-lanes <n>       Most lanes to run at once (default: 3).
+  --max-benches <n>       Most benches to run at once (default: 3).
   --harness <name>      claude, copilot, codex, opencode, pi, custom, or auto
                         (default: auto). auto uses the harness the task's tier
-                        maps to in tiers.conf, then $DELIVERY_HARNESS, then the
-                        first one installed. Naming one forces every lane in the
-                        batch onto it. custom runs $DELIVERY_LANE_CMD, a command
+                        maps to in tiers.conf, then $ETABLI_HARNESS, then the
+                        first one installed. Naming one forces every bench in the
+                        batch onto it. custom runs $ETABLI_BENCH_CMD, a command
                         line with {prompt}, {model}, {worktree} and {plan_dir}
                         in it, for a harness this launcher does not know.
-  --tasks-dir <dir>     Directory holding <id>.md task files (default: delivery/tasks).
-  --worktree-root <dir> Directory that receives one <task-id> worktree per lane.
-                        Defaults to $DELIVERY_WORKTREE_ROOT when set, else to
-                        ../lanes/<name of this repository>.
-  --log-dir <dir>       Where session logs are written (default: .lanes/logs).
+  --tasks-dir <dir>     Directory holding <id>.md task files (default: specs/tasks).
+  --worktree-root <dir> Directory that receives one <task-id> worktree per bench.
+                        Defaults to $ETABLI_WORKTREE_ROOT when set, else to
+                        ../benches/<name of this repository>.
+  --log-dir <dir>       Where session logs are written. Defaults to .logs inside
+                        the worktree root, beside the worktrees and outside
+                        every repository.
   --no-refine           Publish what etabli-implement leaves, with no review
                         and simplification session after it.
-  --no-web              Take web fetch and web search away from the lanes.
+  --no-web              Take web fetch and web search away from the benches.
                         SECURITY: web access is on by default, and it is a
-                        prompt-injection path. A lane runs unattended with a
+                        prompt-injection path. A bench runs unattended with a
                         shell and your git credentials, and a fetched page is
-                        text the model may follow. Use --no-web when lanes
+                        text the model may follow. Use --no-web when benches
                         should build from the repository and its contracts
                         alone. The shell can still reach the network.
   --claim-script <path> claim.sh from the etabli-status skill. Defaults to the
-                        copy installed beside this skill. A lane is never
+                        copy installed beside this skill. A bench is never
                         started without a claim.
   --dry-run             Print what would happen; create nothing, launch nothing.
   -h, --help            Print this help.
@@ -70,51 +72,51 @@ Prints, tab-separated, one line per task:
   SKIP          <id> <reason>
 
 Exit codes:
-  0  every selected lane started, or the dry run completed
+  0  every selected bench started, or the dry run completed
   1  usage or environment error
-  3  no lane could be started
+  3  no bench could be started
 USAGE
 }
 
-max_lanes=3
+max_benches=3
 harness_flag=""
-env_harness="${DELIVERY_HARNESS:-}"
-tasks_dir="delivery/tasks"
+env_harness="${ETABLI_HARNESS:-}"
+tasks_dir="specs/tasks"
 # A developer's own choice, so read from the environment: set once, it reaches
 # every launch, including the ones follow.sh and the orchestrator start.
-worktree_root="${DELIVERY_WORKTREE_ROOT:-}"
-log_dir=".lanes/logs"
-# The kit installs as a whole, so etabli-status sits beside this skill. Kept as
+worktree_root="${ETABLI_WORKTREE_ROOT:-}"
+log_dir=""
+# Établi installs as a whole, so etabli-status sits beside this skill. Kept as
 # an option because a consuming repository may relocate the scripts; never
-# optional in effect, since a lane that cannot claim must not start.
+# optional in effect, since a bench that cannot claim must not start.
 here="$(cd "$(dirname "$0")" && pwd)"
 claim_script="$here/../../etabli-status/scripts/claim.sh"
-publish_script="$here/publish-lane.sh"
-release_script="$here/release-lane.sh"
+publish_script="$here/publish-bench.sh"
+release_script="$here/release-bench.sh"
 implement_skill="$here/../../etabli-implement/SKILL.md"
 refine_skill="$here/../../etabli-refine/SKILL.md"
 harness_lib="$here/harness.sh"
-# Written by the lane inside its worktree, where an unattended session may write,
+# Written by the bench inside its worktree, where an unattended session may write,
 # and published as the pull request body rather than committed.
-lane_report=".lane-report.md"
+bench_report=".bench-report.md"
 dry_run=0
 web=1
 refine=1
 task_ids=""
 
 [ -f "$harness_lib" ] || die "harness adapters not found: $harness_lib"
-# A lane is told to follow this file. Without it the session would run with no
-# skill at all, so a split install stops here rather than in every lane.
+# A bench is told to follow this file. Without it the session would run with no
+# skill at all, so a split install stops here rather than in every bench.
 [ -f "$implement_skill" ] ||
-  die "etabli-implement is not installed beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
+  die "etabli-implement is not installed beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall Établi whole"
 [ -f "$refine_skill" ] ||
-  die "etabli-refine is not installed beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
+  die "etabli-refine is not installed beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall Établi whole"
 # shellcheck source=harness.sh source-path=SCRIPTDIR
 . "$harness_lib"
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --max-lanes) [ $# -ge 2 ] || die "--max-lanes requires a value"; max_lanes="$2"; shift 2 ;;
+    --max-benches) [ $# -ge 2 ] || die "--max-benches requires a value"; max_benches="$2"; shift 2 ;;
     --harness) [ $# -ge 2 ] || die "--harness requires a value"; harness_flag="$2"; shift 2 ;;
     --tasks-dir) [ $# -ge 2 ] || die "--tasks-dir requires a value"; tasks_dir="$2"; shift 2 ;;
     --worktree-root) [ $# -ge 2 ] || die "--worktree-root requires a value"; worktree_root="$2"; shift 2 ;;
@@ -132,14 +134,14 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-case "$max_lanes" in "" | 0* | *[!0-9]*) die "--max-lanes must be a positive number" ;; esac
+case "$max_benches" in "" | 0* | *[!0-9]*) die "--max-benches must be a positive number" ;; esac
 # auto is the same as not choosing, so it is stored as nothing.
 [ "$harness_flag" != auto ] || harness_flag=""
 [ "$env_harness" != auto ] || env_harness=""
 [ -z "$harness_flag" ] || is_harness "$harness_flag" || die "--harness must be one of: $HARNESSES custom auto"
-[ -z "$env_harness" ] || is_harness "$env_harness" || die "DELIVERY_HARNESS must be one of: $HARNESSES custom auto"
+[ -z "$env_harness" ] || is_harness "$env_harness" || die "ETABLI_HARNESS must be one of: $HARNESSES custom auto"
 [ -d "$tasks_dir" ] || die "tasks directory not found: $tasks_dir"
-# Without a working claim, concurrent lanes would take the same task and report
+# Without a working claim, concurrent benches would take the same task and report
 # LAUNCHED for every one of them. Refuse to start rather than run unlocked.
 [ -f "$claim_script" ] || die "claim script not found: $claim_script (pass --claim-script)"
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
@@ -205,9 +207,9 @@ is_tier() {
 load_tiers() {
   user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/etabli/tiers.conf"
   files=""
-  if [ -n "${DELIVERY_TIERS:-}" ]; then
-    [ -f "$DELIVERY_TIERS" ] || die "DELIVERY_TIERS names a missing file: $DELIVERY_TIERS"
-    files="$DELIVERY_TIERS
+  if [ -n "${ETABLI_TIERS:-}" ]; then
+    [ -f "$ETABLI_TIERS" ] || die "ETABLI_TIERS names a missing file: $ETABLI_TIERS"
+    files="$ETABLI_TIERS
 "
   elif [ -f "$user_conf" ]; then
     files="$user_conf
@@ -258,7 +260,7 @@ $files
 EOF_FILES
 }
 
-# The model or advisor a tier maps to, when it applies to the harness the lane
+# The model or advisor a tier maps to, when it applies to the harness the bench
 # runs on. A mapping names its harness because a model id means nothing to
 # another one: passing it through would end the session at startup.
 #   mapped_for <tier_model|tier_advisor|tier_reviewer> <tier> <harness>
@@ -278,12 +280,12 @@ tier_above() {
   case "$1" in chore) printf build ;; *) printf plan ;; esac
 }
 
-# Sets refine_harness, refine_model and refine_advisor for a lane's refinement
-# session. A tier's own reviewer runs on the lane's harness, which its model id
+# Sets refine_harness, refine_model and refine_advisor for a bench's refinement
+# session. A tier's own reviewer runs on the bench's harness, which its model id
 # is for. Otherwise the session runs as the tier above would: on its harness
 # when that one is installed, and with its model when the mapping is for that
 # harness. --harness forces the whole batch, review included.
-#   refine_for <tier> <lane harness>
+#   refine_for <tier> <bench harness>
 refine_for() {
   refine_harness="$2"
   refine_model="$(mapped_for tier_reviewer "$1" "$2")"
@@ -292,7 +294,7 @@ refine_for() {
   up="$(tier_above "$1")"
   up_harness="$(get tier_harness "$up")"
   if [ -z "$harness_flag" ] && [ -n "$up_harness" ]; then
-    if [ "$dry_run" -eq 1 ] || { [ "$up_harness" = custom ] && [ -n "${DELIVERY_LANE_CMD:-}" ]; } ||
+    if [ "$dry_run" -eq 1 ] || { [ "$up_harness" = custom ] && [ -n "${ETABLI_BENCH_CMD:-}" ]; } ||
       command -v "$up_harness" >/dev/null 2>&1; then
       refine_harness="$up_harness"
     fi
@@ -301,7 +303,7 @@ refine_for() {
   refine_advisor="$(mapped_for tier_advisor "$up" "$refine_harness")"
 }
 
-# A task with "parallel: false" runs alone: no other lane of the set may be in
+# A task with "parallel: false" runs alone: no other bench of the set may be in
 # flight while it runs, here or on another developer's machine. Only the remote
 # knows what else is in flight, so read it once, and only when some task needs
 # it: it costs a fetch and a gh call. A dry run skips the read, as it skips the
@@ -310,10 +312,10 @@ runs_alone() {
   [ -f "$tasks_dir/$1.md" ] && [ "$(field "$tasks_dir/$1.md" parallel)" = false ]
 }
 
-# Every lane starts from the shared default branch as the remote has it now, not
+# Every bench starts from the shared default branch as the remote has it now, not
 # from this checkout's HEAD: a task launched after its dependency merged must
 # build on that merge, and nothing updates a local branch when a pull request
-# lands on the forge. Read once per repository, on the first lane that lands in
+# lands on the forge. Read once per repository, on the first bench that lands in
 # it; the cache is a file of "<dir><TAB><base>" lines.
 cached_base() {
   DIR="$1" awk -F'\t' '$1 == ENVIRON["DIR"] { print $2; exit }' "$store/bases" 2>/dev/null || true
@@ -337,14 +339,17 @@ base_for() {
 # directory name of a clone beside this one. The planning files stay here.
 home="$(git rev-parse --show-toplevel)"
 # Task ids are unique within one project only. Repositories cloned side by side
-# would share a bare ../lanes, and a second project's a-001 would find the
+# would share a bare ../benches, and a second project's a-001 would find the
 # first one's worktree in its place.
-[ -n "$worktree_root" ] || worktree_root="../lanes/$(basename "$home")"
+[ -n "$worktree_root" ] || worktree_root="../benches/$(basename "$home")"
+# Logs live beside the worktrees, not in a checkout, so nothing needs ignoring and
+# a log outlives the worktree that is removed when a bench is stopped.
+[ -n "$log_dir" ] || log_dir="$worktree_root/.logs"
 repo_dir_of() {
   repo="$(field "$1" repo)"
   if [ -z "$repo" ]; then printf '%s' "$home"; else printf '%s' "$(dirname "$home")/$repo"; fi
 }
-# Paths handed to git -C or to a lane in another repository must not depend on
+# Paths handed to git -C or to a bench in another repository must not depend on
 # the directory they are read from.
 absolute() {
   case "$1" in /*) printf '%s' "$1" ;; *) printf '%s' "$PWD/$1" ;; esac
@@ -375,7 +380,7 @@ alone_started=""
 # them from its standard input.
 while IFS= read -r task_id <&3; do
   [ -n "$task_id" ] || continue
-  [ "$launched" -lt "$max_lanes" ] || { printf 'SKIP\t%s\tlane cap of %s reached\n' "$task_id" "$max_lanes"; continue; }
+  [ "$launched" -lt "$max_benches" ] || { printf 'SKIP\t%s\tbench cap of %s reached\n' "$task_id" "$max_benches"; continue; }
 
   task_file="$tasks_dir/$task_id.md"
   [ -f "$task_file" ] || { printf 'SKIP\t%s\tno task file at %s\n' "$task_id" "$task_file"; continue; }
@@ -394,7 +399,7 @@ while IFS= read -r task_id <&3; do
       [ -z "$conflict" ] || break
     done <"$store/launched_ids"
   fi
-  [ -z "$conflict" ] || { printf 'SKIP\t%s\tconflicts with running lane %s\n' "$task_id" "$conflict"; continue; }
+  [ -z "$conflict" ] || { printf 'SKIP\t%s\tconflicts with running bench %s\n' "$task_id" "$conflict"; continue; }
 
   [ -z "$alone_in_flight" ] ||
     { printf 'SKIP\t%s\t%s runs alone and is in flight\n' "$task_id" "$alone_in_flight"; continue; }
@@ -404,7 +409,7 @@ while IFS= read -r task_id <&3; do
     [ -z "$in_flight" ] ||
       { printf 'SKIP\t%s\truns alone, and tasks are in flight: %s\n' "$task_id" "$in_flight"; continue; }
     [ "$launched" -eq 0 ] ||
-      { printf 'SKIP\t%s\truns alone, and this batch already started lanes\n' "$task_id"; continue; }
+      { printf 'SKIP\t%s\truns alone, and this batch already started benches\n' "$task_id"; continue; }
   fi
 
   tier="$(field "$task_file" tier)"
@@ -453,10 +458,10 @@ while IFS= read -r task_id <&3; do
     [ "$use_harness" != "auto" ] ||
       { printf 'SKIP\t%s\tno supported harness on PATH (%s)\n' "$task_id" "$HARNESSES"; continue; }
   elif [ "$use_harness" = custom ]; then
-    [ -n "${DELIVERY_LANE_CMD:-}" ] ||
-      { printf 'SKIP\t%s\tcustom needs DELIVERY_LANE_CMD to be set\n' "$task_id"; continue; }
+    [ -n "${ETABLI_BENCH_CMD:-}" ] ||
+      { printf 'SKIP\t%s\tcustom needs ETABLI_BENCH_CMD to be set\n' "$task_id"; continue; }
   elif ! command -v "$use_harness" >/dev/null 2>&1; then
-    # A harness somebody chose is never swapped for another: a lane on a harness
+    # A harness somebody chose is never swapped for another: a bench on a harness
     # nobody asked for would spend an allowance nobody meant to spend.
     printf 'SKIP\t%s\t%s not found on PATH\n' "$task_id" "$use_harness"
     continue
@@ -470,7 +475,7 @@ while IFS= read -r task_id <&3; do
   git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
     { printf 'SKIP\t%s\tno clone of %s at %s\n' "$task_id" "$repo_name" "$repo_dir"; continue; }
   base="$(base_for "$repo_dir")" ||
-    { printf 'SKIP\t%s\tcannot fetch the default branch of %s; a lane must not start from a stale base\n' "$task_id" "$repo_name"; continue; }
+    { printf 'SKIP\t%s\tcannot fetch the default branch of %s; a bench must not start from a stale base\n' "$task_id" "$repo_name"; continue; }
   worktree_abs="$(absolute "$worktree")"
   # --no-track: the base is the remote's default branch, and a task branch that
   # tracked it would push there. The claim sets its own branch as upstream.
@@ -499,7 +504,7 @@ while IFS= read -r task_id <&3; do
   mkdir -p "$log_dir"
   log_file="$(cd "$log_dir" && pwd)/$task_id.log"
 
-  # A lane in another repository cannot see this one's planning files from its
+  # A bench in another repository cannot see this one's planning files from its
   # worktree, so it gets them by absolute path and access to this checkout.
   task_path="$tasks_dir/$task_id.md"
   add_dir=""
@@ -509,13 +514,13 @@ while IFS= read -r task_id <&3; do
     add_dir="$home"
     cross_repo=1
   fi
-  prompt="$(harness_prompt "$use_harness" "$cross_repo" "$implement_skill" "$task_path --report $lane_report")"
+  prompt="$(harness_prompt "$use_harness" "$cross_repo" "$implement_skill" "$task_path --report $bench_report")"
   refine_prompt=""
   [ "$refine" -eq 0 ] ||
-    refine_prompt="$(harness_prompt "$refine_harness" "$cross_repo" "$refine_skill" "$task_path --report $lane_report")"
+    refine_prompt="$(harness_prompt "$refine_harness" "$cross_repo" "$refine_skill" "$task_path --report $bench_report")"
 
   # No stdin: claude -p otherwise waits for piped input before starting.
-  # Publish only after a clean implementation session. A lane that stopped on a
+  # Publish only after a clean implementation session. A bench that stopped on a
   # bad task reverts its attempt, so there is nothing to refine, and the
   # publisher finds nothing and opens no pull request. A failed implementation
   # session releases the claim, unless it left work behind.
@@ -537,11 +542,11 @@ while IFS= read -r task_id <&3; do
       harness_run "$refine_harness" "$refine_prompt" "$refine_model" "$refine_advisor" "$5" "$6" "$7" || status=$?
       if [ "$status" -ne 0 ]; then
         printf "REFINE-FAILED\t%s\n" "$status"
-        printf "\n## Refinement\n\nThe review and simplification session failed (exit %s), so this change is published as etabli-implement left it. The lane log has the details.\n" "$status" >>"$report"
+        printf "\n## Refinement\n\nThe review and simplification session failed (exit %s), so this change is published as etabli-implement left it. The bench log has the details.\n" "$status" >>"$report"
       fi
     fi
     sh "$publish" --report "$report" "$task"
-  ' lane "$harness_lib" "$publish_script" "$release_script" "$lane_report" "$task_path" \
+  ' bench "$harness_lib" "$publish_script" "$release_script" "$bench_report" "$task_path" \
     "$refine" "$refine_harness" "$refine_prompt" "$refine_model" "$refine_advisor" \
     "$use_harness" "$prompt" "$model" "$advisor" "$add_dir" "$home" "$web" \
     </dev/null >"$log_file" 2>&1 &) || true
@@ -555,5 +560,5 @@ done 3<<EOF_IDS
 $task_ids
 EOF_IDS
 
-printf 'LANES\t%s\n' "$launched"
+printf 'BENCHES\t%s\n' "$launched"
 [ "$launched" -gt 0 ] || exit 3

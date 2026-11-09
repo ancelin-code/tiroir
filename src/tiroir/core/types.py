@@ -1,4 +1,4 @@
-"""The types of the core API (`delivery/contracts/core-api.md`) and `to_json`.
+"""The types of the core API (`specs/contracts/core-api.md`) and `to_json`.
 
 Result types are frozen dataclasses and enums. `Channel`, `DrawerRef`, `Scope`,
 `Filters`, `Hit` and `Kind` are defined where search uses them and exported

@@ -1,7 +1,7 @@
 # Contract: <interface name>
 
 **Status:** draft | agreed
-**Parties:** <which lanes or components depend on this>
+**Parties:** <which benches or components depend on this>
 
 ## Purpose
 
@@ -30,6 +30,6 @@ specification instead of paraphrasing one.>
 
 ## Changing this contract
 
-Lanes are building against this. A change needs agreement from every party
-listed above, and the lanes must be told; a silent change produces work that
+Benches are building against this. A change needs agreement from every party
+listed above, and the benches must be told; a silent change produces work that
 cannot be integrated.

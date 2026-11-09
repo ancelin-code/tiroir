@@ -1,12 +1,12 @@
 #!/bin/sh
 set -eu
 
-# Turn a finished lane into a draft pull request: commit, push, open.
+# Turn a finished bench into a draft pull request: commit, push, open.
 #
-# The launcher runs this in the lane worktree once the session exits cleanly.
+# The launcher runs this in the bench worktree once the session exits cleanly.
 # etabli-implement leaves its change uncommitted on purpose, so it stays free
 # of git lifecycle; nothing here needs judgement, so it belongs in a script rather
-# than in the lane's prompt.
+# than in the bench's prompt.
 
 die() {
   printf 'ERROR\t%s\n' "$*" >&2
@@ -15,16 +15,16 @@ die() {
 
 usage() {
   cat <<'USAGE'
-usage: sh publish-lane.sh [options] <task-file>
+usage: sh publish-bench.sh [options] <task-file>
 
-Run from the root of the lane worktree, on branch task/<id>. Commits every
+Run from the root of the bench worktree, on branch task/<id>. Commits every
 change except the report, pushes the branch, and opens a draft pull request.
 
 Options:
-  --report <path>   Handoff report the lane wrote, relative to the worktree
-                    (default: .lane-report.md). Never committed. It is the
+  --report <path>   Handoff report the bench wrote, relative to the worktree
+                    (default: .bench-report.md). Never committed. It is the
                     whole pull request body when the repository has a pull
-                    request template, which the lane fills; otherwise it
+                    request template, which the bench fills; otherwise it
                     follows the task's acceptance criteria.
   --remote <name>   Shared remote (default: origin).
   -h, --help        Print this help.
@@ -36,11 +36,11 @@ Prints one line, tab-separated:
 Exit codes:
   0  published, or the pull request already existed and was updated
   1  usage or environment error, including a failed commit, push or gh call
-  3  nothing to publish: the lane left no change
+  3  nothing to publish: the bench left no change
 USAGE
 }
 
-report=".lane-report.md"
+report=".bench-report.md"
 remote="origin"
 task_file=""
 
@@ -57,7 +57,7 @@ done
 [ -n "$task_file" ] || die "no task file given"
 [ -f "$task_file" ] || die "task file not found: $task_file"
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
-[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the root of the lane worktree"
+[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the root of the bench worktree"
 
 field() {
   awk -v key="$2" '
@@ -116,19 +116,19 @@ if [ "$outside" -eq 1 ] && home="$(git -C "$task_dir" rev-parse --show-toplevel 
   fi
 fi
 
-# The worktree holds nothing but this lane's work, so every change is the
+# The worktree holds nothing but this bench's work, so every change is the
 # task's, except the report, which belongs in the pull request and not the diff.
 git add -A -- . ":(exclude)$report"
 if ! git diff --cached --quiet; then
   git commit -q -m "$subject" -m "Task: $task_ref" || die "commit failed; the change is still staged in $(pwd)"
 fi
 
-# The lane's work is whatever sits on top of its claim commit. Comparing with the
-# remote branch instead would read an already pushed lane as empty, and a re-run
+# The bench's work is whatever sits on top of its claim commit. Comparing with the
+# remote branch instead would read an already pushed bench as empty, and a re-run
 # could then never open a pull request that is missing.
 case "$(git log -1 --format=%s HEAD)" in
   "chore(claim): task $task_id "*)
-    printf 'NOTHING\t%s\tthe lane left no change\n' "$task_id"
+    printf 'NOTHING\t%s\tthe bench left no change\n' "$task_id"
     exit 3
     ;;
 esac
@@ -168,7 +168,7 @@ has_template() (
 body="$(mktemp)"
 trap 'rm -f "$body"' EXIT
 if [ -s "$report" ] && has_template; then
-  # The lane wrote its report in the template's shape; it is the whole body.
+  # The bench wrote its report in the template's shape; it is the whole body.
   cp "$report" "$body"
 else
   # shellcheck disable=SC2016 # the backticks are Markdown, not command substitution
@@ -180,11 +180,11 @@ else
       on && /^#+ / { exit }
       on { print }
     ' "$task_file"
-    printf '\n## Lane report\n\n'
+    printf '\n## Bench report\n\n'
     if [ -s "$report" ]; then
       cat "$report"
     else
-      printf 'The lane wrote no report. Its session log is `.lanes/logs/%s.log` on the machine that launched it.\n' "$task_id"
+      printf 'The bench wrote no report. Its session log is `%s.log` in the `.logs` directory beside the bench worktrees, on the machine that launched it.\n' "$task_id"
     fi
   } >"$body"
 fi

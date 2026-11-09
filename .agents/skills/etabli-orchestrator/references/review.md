@@ -3,9 +3,9 @@
 Review is the final gate. Everything before it ran unattended, so this is where
 a human decides whether the work lands.
 
-The kit ships no reviewer for this gate, so these rules apply to whichever one
+Établi ships no reviewer for this gate, so these rules apply to whichever one
 runs: the harness's own review capability, or a review skill installed alongside
-the kit. A lane's change has already been through `etabli-refine`, which
+Établi. A bench's change has already been through `etabli-refine`, which
 reviewed it against its task on a stronger model and fixed what it found; its
 Refinement section in the pull request body says what it fixed, deferred and
 simplified. The human review is still the gate.
@@ -53,9 +53,9 @@ These are prompts about method, not personas. Asking for concrete findings and
 for what is missing improves results; instructing a reviewer to adopt an
 attitude does not.
 
-## Reviewing an unattended lane
+## Reviewing an unattended bench
 
-A lane ran without a human watching, so check the things a watching human would
+A bench ran without a human watching, so check the things a watching human would
 have caught:
 
 - does the diff stay inside the task's frozen scope, or did it grow
