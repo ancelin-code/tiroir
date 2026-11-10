@@ -12,12 +12,13 @@ from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from pathlib import Path
 
-from tiroir.core import index, serverdb
+from tiroir.core import index, serverdb, skill
 from tiroir.core.errors import CoreError
 from tiroir.core.indexer import Indexer
-from tiroir.core.layout import SUMMARY_FILE, drawers_in, slug
+from tiroir.core.layout import SCHEMA_FILE, SUMMARY_FILE, drawers_in, slug
 from tiroir.core.lexical import search_lexical
 from tiroir.core.presets import load_preset, with_identity
+from tiroir.core.schema import Schema
 from tiroir.core.serverdb import GrantedStore, Member, StoreRow
 from tiroir.core.store import (
     Author,
@@ -43,6 +44,7 @@ from tiroir.core.types import (
     Scope,
     SearchResult,
     ServerState,
+    SkillArchive,
     StatusReport,
     StoreAdminInfo,
     StoreIndexReport,
@@ -274,8 +276,45 @@ class MemberContext:
         return WriteOutcome(True, None, commit)
 
     def status(self) -> StatusReport:
-        """The member's stores and access, and the degraded modes in force."""
-        return StatusReport(tuple(self.stores()), (Degraded.VECTORS_PENDING,))
+        """The member's stores and access, skill freshness and degraded modes."""
+        member, grants = self._grants()
+        prints = [self._grant_print(g)[0] for g in grants]
+        with self._core._db() as conn:
+            downloaded = serverdb.skill_fingerprint(conn, member.id)
+        return StatusReport(
+            tuple(_info(g) for g in grants),
+            (Degraded.VECTORS_PENDING,),
+            skill_stale=downloaded != skill.fingerprint(prints),
+        )
+
+    def memory_skill(self) -> SkillArchive:
+        """The member's memory skill archive, recorded as their latest download.
+
+        Built from the schemas at `main`'s head of the granted stores only
+        (X1a); raises `schema.invalid` when one of them does not validate.
+        """
+        member, grants = self._grants()
+        prints: list[skill.GrantPrint] = []
+        schemas: list[Schema] = []
+        for granted in grants:
+            grant_print, reader, head = self._grant_print(granted)
+            prints.append(grant_print)
+            schemas.append(reader.schema(head))
+        found = skill.fingerprint(prints)
+        data = skill.skill_archive(skill.skill_text(schemas))
+        with self._core._db() as conn:
+            serverdb.record_skill_download(conn, member.id, found)
+        return SkillArchive(skill.ARCHIVE_NAME, data, found)
+
+    def _grant_print(
+        self, granted: GrantedStore
+    ) -> tuple[skill.GrantPrint, StoreReader, str]:
+        """What the skill depends on in a grant, with the reader and head used."""
+        reader = StoreReader(self._core.data_dir, granted.store.id)
+        head = reader.head()
+        schema_hash = skill.schema_hash(reader.read(SCHEMA_FILE, head) or b"")
+        grant_print = skill.GrantPrint(granted.store.id, granted.access, schema_hash)
+        return grant_print, reader, head
 
 
 def _entry_id(path: str) -> str:
