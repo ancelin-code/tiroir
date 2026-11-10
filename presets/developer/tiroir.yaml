@@ -1,0 +1,52 @@
+tiroir: 1
+
+store:
+  id: 3e8a5b17-92c4-4d06-b1f3-6a7d0c2e95b8
+  name: dev-example
+  audience: personal
+  language: en
+  description: "A solo developer's memory, one drawer per repository."
+
+shared:
+  path: shared
+  topics: [conventions, release checklist, code review]
+  conventions: shared/conventions.md
+
+drawer_types:
+  repo:
+    label: Repository
+    label_plural: Repositories
+    description: "One repository the developer works on, identified by its slug."
+    path: "repos/{slug}"
+    fields:
+      slug:
+        type: text
+        required: true
+        pattern: "[a-z][a-z0-9-]*"
+        description: "Short lowercase name of the repository, such as api-gateway."
+      name:
+        type: text
+        required: true
+        description: "Display name of the repository."
+      aliases:
+        type: list
+        description: "Other names the repository is called by."
+      language:
+        type: enum
+        values: [python, typescript, go, rust, java, ruby]
+        description: "Main programming language of the repository."
+      status:
+        type: enum
+        values: [active, maintenance, archived]
+        description: "Whether the repository is still being developed."
+    summary:
+      template: templates/repo-summary.md
+      sections: [Purpose, Architecture, Conventions, Decisions, Gotchas, Open questions]
+    log:
+      template: templates/repo-log.md
+    detect:
+      names: [slug, name, aliases]
+      cwd: slug
+    inject:
+      sections: [Purpose, Gotchas, Open questions]
+      max_tokens: 800
