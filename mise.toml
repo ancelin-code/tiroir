@@ -42,6 +42,12 @@ depends = ["sync"]
 # into an Apache-2.0 program: it is the one reviewed exception.
 run = "uv run pip-licenses --partial-match --fail-on=GPL --ignore-packages pygit2"
 
+[tasks."test:model"]
+description = "Run the tests that load real embedding models (downloads them once into .cache/test-data/models)"
+depends = ["sync"]
+env = { TIROIR_TEST_MODELS = "{{config_root}}/.cache/test-data" }
+run = "uv run pytest tests/integration/test_embeddings.py"
+
 [tasks.check]
 description = "Run every check"
 depends = ["lint", "typecheck", "test"]
