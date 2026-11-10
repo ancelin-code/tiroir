@@ -13,7 +13,6 @@ import uvicorn
 from loguru import logger
 
 from tiroir.core import Access, AdminContext, Audience, CoreError, open_core, serverdb
-from tiroir.core.presets import preset_path
 from tiroir.core.serverdb import Member, ServerDbError
 
 DEFAULT_DATA_DIR = "/data"
@@ -34,6 +33,10 @@ EXIT_BUSY = 5
 
 def _data_dir() -> Path:
     return Path(environ.get("TIROIR_DATA", DEFAULT_DATA_DIR))
+
+
+def _presets_dir() -> Path:
+    return Path(environ.get(PRESETS_VARIABLE, DEFAULT_PRESETS_DIR))
 
 
 def _error(message: str) -> int:
@@ -146,7 +149,7 @@ def _with_admin(run: Callable[[AdminContext], None]) -> int:
         handle = _acting_admin(conn)
     if handle is None:
         return _error("the server has no administrator: run `tiroir admin init`")
-    core = open_core(_data_dir(), start_workers=False)
+    core = open_core(_data_dir(), start_workers=False, presets_dir=_presets_dir())
     try:
         run(core.admin(handle))
     except CoreError as error:
@@ -159,6 +162,10 @@ def _with_admin(run: Callable[[AdminContext], None]) -> int:
 
 def _stores(args: argparse.Namespace) -> int:
     def run(admin: AdminContext) -> None:
+        if args.action == "presets":
+            for info in admin.presets():
+                logger.info(f"{info.name}\t{info.origin}")
+            return
         if (args.action or "list") == "list":
             for store in admin.stores():
                 logger.info(
@@ -168,8 +175,7 @@ def _stores(args: argparse.Namespace) -> int:
             return
         preset = None
         if args.preset is not None:
-            presets = Path(environ.get(PRESETS_VARIABLE, DEFAULT_PRESETS_DIR))
-            preset = preset_path(presets, args.preset)
+            preset = admin.preset_path(args.preset)
         created = admin.create_store(
             args.name, Audience(args.audience), args.language, args.owner, preset
         )
@@ -262,6 +268,7 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
     stores.set_defaults(run=_stores)
     store_actions = stores.add_subparsers(dest="action")
     store_actions.add_parser("list")
+    store_actions.add_parser("presets")
     add_store = store_actions.add_parser("add")
     add_store.add_argument("name")
     add_store.add_argument("--audience", required=True, choices=["personal", "team"])
