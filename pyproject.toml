@@ -18,6 +18,10 @@ dependencies = [
   "argon2-cffi",
   "httpx",
   "loguru",
+  "onnxruntime>=1.31.1",
+  "tokenizers>=0.23.3",
+  "huggingface-hub>=2.4.0",
+  "numpy>=2.5.4",
 ]
 
 [project.scripts]

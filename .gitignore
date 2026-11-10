@@ -19,3 +19,4 @@ __pycache__/
 
 # Documentation site, built by `mise run docs:build`
 /site/
+/.cache/
