@@ -30,6 +30,7 @@ nav = [
   { "Reference" = [
     { "CLI Reference" = "reference/cli.md" },
     { "Schema Reference" = "reference/schema.md" },
+    { "Presets" = "reference/presets.md" },
   ] },
   { "Roadmap" = "roadmap.md" },
   { "Changelog" = "changelog.md" },
