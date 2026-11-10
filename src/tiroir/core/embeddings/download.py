@@ -18,26 +18,32 @@ def is_complete(spec: ModelSpec, directory: Path) -> bool:
     return all((directory / name).is_file() for name in spec.files)
 
 
-def ensure_model(
-    spec: ModelSpec, data_dir: Path, env: Mapping[str, str] | None = None
-) -> Path:
-    """Return the directory holding the model, downloading it if needed.
+def offline_root(env: Mapping[str, str] | None = None) -> Path | None:
+    """Return the directory named by `TIROIR_MODELS`, or None when it is unset."""
+    value = (os.environ if env is None else env).get(MODELS_ENV)
+    return Path(value) if value else None
 
-    A directory named by `TIROIR_MODELS` takes precedence and is never
-    downloaded into; one that lacks the model raises `embedding.model-missing`.
-    Otherwise the model lives in `<data>/models/<model-id>/`, fetched at its
-    pinned revision on first use and used offline once complete. A failed
-    download raises `embedding.download-failed`.
+
+def offline_model(spec: ModelSpec, root: Path) -> Path:
+    """Return the model's directory under `root`, which is never downloaded into.
+
+    Raises `embedding.model-missing` when the directory lacks a file of the model.
     """
-    offline = (os.environ if env is None else env).get(MODELS_ENV)
-    if offline:
-        directory = Path(offline) / spec.model_id
-        if not is_complete(spec, directory):
-            raise CoreError(
-                "embedding.model-missing",
-                f"model {spec.model_id} is not complete in {MODELS_ENV}",
-            )
-        return directory
+    directory = root / spec.model_id
+    if not is_complete(spec, directory):
+        raise CoreError(
+            "embedding.model-missing",
+            f"model {spec.model_id} is not complete in {MODELS_ENV}",
+        )
+    return directory
+
+
+def download_model(spec: ModelSpec, data_dir: Path) -> Path:
+    """Return `<data>/models/<model-id>/`, fetching the model there if needed.
+
+    The model is fetched at its pinned revision on first use and used offline
+    once complete. A failed download raises `embedding.download-failed`.
+    """
     directory = data_dir / "models" / spec.model_id
     if is_complete(spec, directory):
         return directory

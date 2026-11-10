@@ -14,7 +14,7 @@ import pytest
 from loguru import logger
 
 from tiroir.core.embeddings import download
-from tiroir.core.embeddings.download import ensure_model
+from tiroir.core.embeddings.download import download_model, offline_model, offline_root
 from tiroir.core.embeddings.external import ExternalEmbedder
 from tiroir.core.embeddings.local import LocalEmbedder
 from tiroir.core.embeddings.registry import MODELS
@@ -238,21 +238,33 @@ def test_offline_directory_takes_precedence(tmp_path: Path) -> None:
     env = {download.MODELS_ENV: str(tmp_path / "offline")}
 
     # When
-    directory = ensure_model(spec, tmp_path / "data", env)
+    root = offline_root(env)
+    assert root is not None
+    directory = offline_model(spec, root)
 
     # Then
+    assert root == tmp_path / "offline"
     assert directory == offline
-    assert not (tmp_path / "data").exists()
+
+
+def test_offline_root_is_none_when_unset() -> None:
+    # Given
+    env: dict[str, str] = {}
+
+    # When
+    root = offline_root(env)
+
+    # Then
+    assert root is None
 
 
 def test_offline_directory_without_the_model_fails(tmp_path: Path) -> None:
     # Given
     spec = MODELS["multilingual-e5-small"]
-    env = {download.MODELS_ENV: str(tmp_path)}
 
     # When / Then
     with pytest.raises(CoreError) as raised:
-        ensure_model(spec, tmp_path / "data", env)
+        offline_model(spec, tmp_path)
     assert raised.value.code == "embedding.model-missing"
 
 
@@ -272,7 +284,7 @@ def test_complete_directory_makes_no_download(
     monkeypatch.setattr(download, "hf_hub_download", refuse)
 
     # When
-    found = ensure_model(spec, tmp_path, {})
+    found = download_model(spec, tmp_path)
 
     # Then
     assert found == directory
@@ -286,7 +298,7 @@ def test_minilm_embeds_french_and_reloads_offline(
     assert MODELS_DIR
     spec = MODELS["paraphrase-multilingual-MiniLM-L12-v2"]
     data_dir = Path(MODELS_DIR)
-    directory = ensure_model(spec, data_dir, {})
+    directory = download_model(spec, data_dir)
     assert directory == data_dir / "models" / spec.model_id
 
     def refuse(*_: Any, **__: Any) -> None:
@@ -296,7 +308,7 @@ def test_minilm_embeds_french_and_reloads_offline(
     monkeypatch.setattr(socket.socket, "connect", refuse)
 
     # When
-    reloaded = ensure_model(spec, data_dir, {})
+    reloaded = download_model(spec, data_dir)
     embedder = LocalEmbedder(spec, reloaded)
     query = embedder.embed_queries(["échéance de TVA"])
     passages = embedder.embed_passages(
