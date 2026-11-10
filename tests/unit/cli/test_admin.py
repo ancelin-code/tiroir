@@ -1,6 +1,8 @@
+import argparse
+
 import pytest
 
-from tiroir.cli.admin import proxy_options, trusted_proxies
+from tiroir.cli.admin import proxy_options, register, trusted_proxies
 
 
 def test_trusted_proxies_are_ip_networks() -> None:
@@ -36,3 +38,15 @@ def test_proxy_options_read_forwarded_headers_from_those_proxies_only() -> None:
 
     # Then
     assert options == {"proxy_headers": True, "forwarded_allow_ips": proxies}
+
+
+def test_stores_presets_is_a_stores_action() -> None:
+    # Given
+    parser = argparse.ArgumentParser()
+    register(parser.add_subparsers())
+
+    # When
+    args = parser.parse_args(["admin", "stores", "presets"])
+
+    # Then
+    assert (args.action, args.run.__name__) == ("presets", "_stores")

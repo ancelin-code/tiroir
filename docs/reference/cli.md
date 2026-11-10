@@ -133,10 +133,11 @@ alice: new password (shown once, to change at next sign-in)
 ## `tiroir admin stores`
 
 ```text
-usage: tiroir admin stores [-h] {list,add} ...
+usage: tiroir admin stores [-h] {list,add,presets} ...
 ```
 
-Lists and creates stores. Without an action, it lists them.
+Lists and creates stores, and lists the presets they can start from. Without an
+action, it lists the stores.
 
 ### `stores list`
 
@@ -168,7 +169,7 @@ usage: tiroir admin stores add [-h] --audience {personal,team}
 | `--audience {personal,team}` | `personal`: one member's memory. `team`: shared by the members you grant. Required. |
 | `--language LANGUAGE` | The language of the store's content, such as `fr` or `en`. Required. |
 | `--owner OWNER` | The handle of the member who owns the store. They get write access, and the store becomes their default. Required for a `personal` store. |
-| `--preset PRESET` | The preset the store starts from. In 0.1.0, every store starts from a preset: the bundled `accounting-firm`, filled with invented client drawers, or one of your own ([Custom Schema](../install/custom-schema.md)). |
+| `--preset PRESET` | The preset the store starts from, by name. In 0.1.0, every store starts from a preset: the bundled `accounting-firm`, filled with invented client drawers, or one of your own, found in `/data/presets/` ([Custom Schema](../install/custom-schema.md)). A name found in both places is refused with `preset.conflict`. |
 
 Creates the store and indexes it.
 
@@ -176,6 +177,22 @@ Creates the store and indexes it.
 $ tiroir admin stores add alice-memory --audience personal --language fr \
     --owner alice --preset accounting-firm
 store: alice-memory
+```
+
+### `stores presets`
+
+```text
+usage: tiroir admin stores presets [-h]
+```
+
+Prints one preset per line: its name, and its origin, `bundled` (in the image)
+or `server` (your own, in `/data/presets/`). A name that appears twice is a
+conflict: `stores add` refuses it until you rename your folder.
+
+```text
+$ tiroir admin stores presets
+accounting-firm	bundled
+my-team	server
 ```
 
 ## `tiroir admin grant`

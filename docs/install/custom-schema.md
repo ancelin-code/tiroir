@@ -67,42 +67,42 @@ Take a sheet of paper and answer:
 The rest of the page builds a store for a team that wants one drawer per code
 repository. Replace "repository" with your own answer as you go.
 
-## Step 1: Prepare the presets folder
+## Step 1: Prepare your preset folder
 
-The `presets/` folder of the repository you cloned in the
-[Installation Guide](vps.md#1-get-the-stack) holds the bundled presets, the same
-ones as the image. You will add yours next to them. From the directory that
-holds `compose.yaml`:
+The server looks for your presets in one folder, `/data/presets/`, inside the
+container. It lives on the data volume (`tiroir-data`), so it **survives
+upgrades**: replacing the image never touches it. Each preset is a sub-folder
+of it, and its name is the one you give to `--preset`: lowercase letters,
+digits and hyphens, starting with a letter or a digit.
 
-```sh
-mkdir -p presets/my-team/templates presets/my-team/shared
-```
-
-`presets/accounting-firm` is a complete example of every file below, so keep it
-open as you read. `my-team` is the name you will give to `--preset`: lowercase
-letters, digits and hyphens, starting with a letter or a digit.
-
-The server reads its presets from inside the container, so tell Compose to use
-this folder instead of the one in the image. Create `compose.override.yaml`
-next to `compose.yaml`; Compose reads it automatically:
-
-```yaml
-services:
-  tiroir:
-    volumes:
-      - ./presets:/app/presets:ro
-```
+Write your preset in a working folder on your machine, then copy it to the
+server in step 4. From the directory that holds `compose.yaml`:
 
 ```sh
-docker compose up -d
+mkdir -p my-team/templates my-team/shared
 ```
 
-From now on, a change to a file under `presets/` is seen by the server at once;
-no restart is needed.
+The layout of a preset is the one of the bundled `presets/accounting-firm` of
+the repository you cloned in the [Installation Guide](vps.md#1-get-the-stack),
+a complete example of every file below, so keep it open as you read:
+
+```text
+my-team/
+  tiroir.yaml     the schema (required)
+  templates/      what a new summary or log entry looks like
+  shared/         shared documents
+  data/           the starting drawers, laid out as in the store (optional)
+  README.md       for you; it is not copied into the store
+```
+
+Presets are read when a store is created, so adding or changing a folder needs
+no restart. A preset whose name is also a bundled one (`accounting-firm`) is
+**refused** with `preset.conflict` rather than replacing the bundled one: give
+yours another name.
 
 ## Step 2: Write the schema
 
-Create `presets/my-team/tiroir.yaml`:
+Create `my-team/tiroir.yaml`:
 
 ```yaml
 # Version of the file format. Always 1.
@@ -195,7 +195,7 @@ Read it from the top:
 
 Then the two templates. A summary template holds exactly the sections you
 declared, in the same order, with a line of guidance under each. Create
-`presets/my-team/templates/repo-summary.md`:
+`my-team/templates/repo-summary.md`:
 
 ```markdown
 # {name}
@@ -219,7 +219,7 @@ What is still undecided.
 
 `{name}` is replaced by the drawer's field of that name when it is created. The
 log template is the shape of a new entry. Create
-`presets/my-team/templates/repo-log.md`:
+`my-team/templates/repo-log.md`:
 
 ```markdown
 **What happened:** one sentence.
@@ -227,7 +227,7 @@ log template is the shape of a new entry. Create
 **Next step:** who does what, and by when.
 ```
 
-Finally a shared document, `presets/my-team/shared/conventions.md`. Claude reads
+Finally a shared document, `my-team/shared/conventions.md`. Claude reads
 it the first time it uses the store in a session, so put in it what you want
 every entry to respect:
 
@@ -269,7 +269,7 @@ Updating summaries from Claude is planned too, and a person will confirm each
 update (see the [Roadmap](../roadmap.md#3-team)).
 
 Create the first drawer's summary,
-`presets/my-team/data/repos/billing-api/summary.md`:
+`my-team/data/repos/billing-api/summary.md`:
 
 ```markdown
 ---
@@ -314,6 +314,27 @@ Try it on a machine that does not matter first, for example your laptop with the
 same `compose.yaml`: 0.1.0 has no command to delete a store, so a store you
 created by mistake stays there.
 
+First copy the preset to the server's folder, then check that it is listed with
+the origin `server`. The folder does not exist on a new server, so create it
+first; copying `my-team` into `/data/presets/` again later updates it in place:
+
+```sh
+docker compose exec tiroir mkdir -p /data/presets
+docker compose cp my-team tiroir:/data/presets/
+docker compose exec tiroir tiroir admin stores presets
+```
+
+```text
+accounting-firm	bundled
+my-team	server
+```
+
+Outside the container, `/data/presets/` is the `presets` folder at the root of
+the volume: `docker volume inspect` shows where it is on the host (the volume
+is named `<project>_tiroir-data`). Copying there works as well.
+
+Then create the store:
+
 ```sh
 docker compose exec tiroir tiroir admin stores add my-team-memory \
   --audience team --language en --preset my-team
@@ -345,7 +366,8 @@ to look. Fix the file and run the command again.
 | `schema.invalid` | A key is unknown, misspelled, mis-indented or of the wrong type. An unknown key is always an error, so that a typo never silently disables a rule. |
 | `schema.invalid-path` | A drawer type's `path` has no placeholder of a required field. |
 | `schema.unknown-section` | `inject.sections` or a template names a heading that is not in `summary.sections`. |
-| `preset.unknown` | There is no folder of that name in `presets/`, or the name has capitals or spaces. |
+| `preset.unknown` | There is no folder of that name in `/data/presets/` or among the bundled presets, or the name has capitals or spaces. |
+| `preset.conflict` | `/data/presets/` has a folder with the name of a bundled preset. Rename it; nothing was created. |
 | `store.exists` | A store with that name exists already. |
 
 ## Step 5: Look at the result
@@ -415,7 +437,7 @@ file under `repos/billing-api/log/`. If all three work, your schema works.
 - **A different language.** `language` is the memory language, for example `fr`.
   Write the labels, the section headings and the templates in that language;
   `--language` on `stores add` overrides the one in the file.
-- **Learn from a complete example.** `presets/accounting-firm` is the full
+- **Learn from a complete example.** `accounting-firm` is the full
   version of what you built: a French schema with six fields, six sections,
   templates, shared procedures and 23 drawers with their logs.
 - **Every key, every rule.** The [Schema Reference](../reference/schema.md)
@@ -427,9 +449,12 @@ file under `repos/billing-api/log/`. If all three work, your schema works.
   Changing the preset afterwards does not change the stores already made from
   it, and 0.1.0 has no command to change the schema of an existing store; schema
   (see the [Roadmap](../roadmap.md#4-operations)). Settle the schema on a test store before the real one.
-- **Upgrades.** With `./presets` mounted, the server reads the presets of your
-  clone, not those of the image. A `git pull` brings the new bundled presets
-  and leaves yours alone.
+- **Upgrades.** `/data/presets/` is on the data volume: a new image brings new
+  bundled presets and leaves yours alone. If a new bundled preset takes the
+  name of one of yours, `stores add` reports `preset.conflict`: rename your
+  folder.
+- **Validation.** Your preset is checked exactly like a bundled one when a
+  store is created; a schema error creates nothing.
 
 See the [CLI Reference](../reference/cli.md) for `stores add` and `grant`, and
 the [Installation Guide](../install/vps.md) for the stack.

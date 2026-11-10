@@ -17,7 +17,13 @@ from tiroir.core.errors import CoreError
 from tiroir.core.indexer import Indexer
 from tiroir.core.layout import SUMMARY_FILE, drawers_in, slug
 from tiroir.core.lexical import search_lexical
-from tiroir.core.presets import load_preset, with_identity
+from tiroir.core.presets import (
+    PresetInfo,
+    available_presets,
+    load_preset,
+    resolve_preset,
+    with_identity,
+)
 from tiroir.core.serverdb import GrantedStore, Member, StoreRow
 from tiroir.core.store import (
     Author,
@@ -55,10 +61,15 @@ from tiroir.core.types import (
 _LOG_FOLDER = "log"
 
 
-def open_core(data_dir: Path, *, start_workers: bool = True) -> "Core":
-    """Open the data directory; `start_workers` runs the indexer in the background."""
+def open_core(
+    data_dir: Path, *, start_workers: bool = True, presets_dir: Path | None = None
+) -> "Core":
+    """Open the data directory; `start_workers` runs the indexer in the background.
+
+    `presets_dir` holds the bundled presets, next to the data directory's own.
+    """
     indexer = Indexer(data_dir) if start_workers else None
-    core = Core(data_dir, indexer)
+    core = Core(data_dir, indexer, presets_dir)
     if indexer is not None:
         indexer.start()
     return core
@@ -67,9 +78,15 @@ def open_core(data_dir: Path, *, start_workers: bool = True) -> "Core":
 class Core:
     """The server database, the stores and their indexes behind one object."""
 
-    def __init__(self, data_dir: Path, indexer: Indexer | None = None) -> None:
+    def __init__(
+        self,
+        data_dir: Path,
+        indexer: Indexer | None = None,
+        presets_dir: Path | None = None,
+    ) -> None:
         """Hold `data_dir`; `open_core` is the way to get one."""
         self.data_dir = data_dir
+        self.presets_dir = presets_dir or Path("/nonexistent-presets")
         self._indexer = indexer
         # Creates the database and applies its migrations before any call.
         serverdb.open_server_db(data_dir).close()
@@ -304,6 +321,14 @@ class AdminContext:
         if member.disabled is not None:
             raise CoreError("member.disabled", f"member {handle} is disabled")
         return member
+
+    def presets(self) -> list[PresetInfo]:
+        """The bundled and the administrator's presets, each with its origin."""
+        return available_presets(self._core.presets_dir, self._core.data_dir)
+
+    def preset_path(self, name: str) -> Path:
+        """The directory of preset `name`; `preset.unknown` or `preset.conflict`."""
+        return resolve_preset(self._core.presets_dir, self._core.data_dir, name)
 
     def create_store(
         self,
