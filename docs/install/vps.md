@@ -123,6 +123,24 @@ docker compose exec tiroir ls /data/stores
 Indexes are brought up to date when the store is created and after each write.
 To force it, run `docker compose exec tiroir tiroir admin index`.
 
+### The embedding model
+
+Semantic search embeds text on the server with a multilingual model, run by
+ONNX Runtime on the CPU. The model is downloaded once, from its Hugging Face
+repository at a pinned revision, into `/data/models/<model-id>/` on the
+`tiroir-data` volume, and later starts use it without any network access. The
+default model, `paraphrase-multilingual-MiniLM-L12-v2`, is about 0.5 GB to
+download; the larger candidates (`multilingual-e5-base`, `multilingual-e5-large`
+and `bge-m3`) are 1 to 2.3 GB.
+
+A server with no outbound access can be given the model instead. Download the
+model's files on another machine, place them in a folder named after the model
+in a directory of the server, for example `/models/paraphrase-multilingual-MiniLM-L12-v2/`,
+keeping the files' paths (`onnx/model.onnx`, `tokenizer.json`), mount that
+directory into the container and set `TIROIR_MODELS=/models` in the
+container's environment. That directory takes precedence over `/data/models`,
+and Tiroir never downloads into it.
+
 ## 7. Upgrade
 
 An upgrade updates the stack files, pulls the new image and restarts the
