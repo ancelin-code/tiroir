@@ -53,3 +53,14 @@ def test_to_json_writes_enums_by_value_and_nested_types() -> None:
         ],
         "day": "2026-01-02",
     }
+
+
+def test_to_json_writes_bytes_as_base64() -> None:
+    # Given
+    value = {"data": b"PK\x03\x04"}
+
+    # When
+    data = json.loads(to_json(value))
+
+    # Then
+    assert data == {"data": "UEsDBA=="}

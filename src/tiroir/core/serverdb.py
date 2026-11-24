@@ -745,3 +745,24 @@ def delete_grant(conn: sqlite3.Connection, member_id: str, store_id: str) -> boo
     )
     conn.commit()
     return cursor.rowcount > 0
+
+
+def record_skill_download(
+    conn: sqlite3.Connection, member_id: str, fingerprint: str
+) -> None:
+    """Record the fingerprint of the memory skill the member just downloaded."""
+    downloaded = datetime.now(UTC).isoformat(timespec="seconds")
+    conn.execute(
+        "INSERT INTO skill_downloads (member, fingerprint, downloaded) VALUES (?, ?, ?)"
+        " ON CONFLICT (member) DO UPDATE SET fingerprint = excluded.fingerprint,"
+        " downloaded = excluded.downloaded",
+        (member_id, fingerprint, downloaded),
+    )
+
+
+def skill_fingerprint(conn: sqlite3.Connection, member_id: str) -> str | None:
+    """The fingerprint of the member's last downloaded skill; `None` if never."""
+    row = conn.execute(
+        "SELECT fingerprint FROM skill_downloads WHERE member = ?", (member_id,)
+    ).fetchone()
+    return None if row is None else row[0]

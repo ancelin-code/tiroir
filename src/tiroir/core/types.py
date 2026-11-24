@@ -5,6 +5,7 @@ Result types are frozen dataclasses and enums. `Channel`, `DrawerRef`, `Scope`,
 from here with the others.
 """
 
+import base64
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, fields, is_dataclass
@@ -38,6 +39,7 @@ __all__ = [
     "Scope",
     "SearchResult",
     "ServerState",
+    "SkillArchive",
     "StatusReport",
     "StoreAdminInfo",
     "StoreIndexReport",
@@ -182,10 +184,28 @@ class WriteOutcome:
 
 @dataclass(frozen=True)
 class StatusReport:
-    """What the member can reach and what is degraded (stores and access only)."""
+    """What the member can reach, whether their memory skill is stale, what is degraded.
+
+    `skill_stale` is true when the member never downloaded the skill, or when
+    their grants or a granted store's schema changed since (ADR-013).
+    """
 
     stores: tuple[StoreInfo, ...]
     degraded: tuple[Degraded, ...]
+    skill_stale: bool
+
+
+@dataclass(frozen=True)
+class SkillArchive:
+    """The member's memory skill as a zip to upload to their host (ADR-013).
+
+    `data` is serialised by `to_json` as base64; `fingerprint` identifies what
+    the skill was generated from.
+    """
+
+    file_name: str
+    data: bytes
+    fingerprint: str
 
 
 @dataclass(frozen=True)
@@ -229,6 +249,8 @@ def _plain(value: object) -> Any:
         return value.isoformat()
     if isinstance(value, Path):
         return str(value)
+    if isinstance(value, bytes):
+        return base64.b64encode(value).decode("ascii")
     if is_dataclass(value) and not isinstance(value, type):
         return {f.name: _plain(getattr(value, f.name)) for f in fields(value)}
     if isinstance(value, Mapping):
